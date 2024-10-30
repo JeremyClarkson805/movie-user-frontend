@@ -2,10 +2,12 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
-import axios from 'axios'
+import { useAuthStore } from '../stores/auth'
 
+const emit = defineEmits(['close', 'show-login'])
 const router = useRouter()
 const themeStore = useThemeStore()
+const authStore = useAuthStore()
 
 const username = ref('')
 const email = ref('')
@@ -14,108 +16,34 @@ const confirmPassword = ref('')
 const verificationCode = ref('')
 const error = ref('')
 
-// 新增状态
-const isCodeSent = ref(false)
-const buttonText = ref('发送验证码')
-const countdown = ref(60)
-const timer = ref<number | null>(null)
-
-// 发送验证码
-const sendVerificationCode = async () => {
-  try {
-    // 验证邮箱格式
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email.value)) {
-      error.value = '请输入有效的邮箱地址'
-      return
-    }
-
-    // 调用发送验证码API
-    const response = await axios.post('http://localhost:8083/api/user/register', {
-      userName: username.value,
-      email: email.value,
-      passwd: password.value
-    })
-
-    if (response.data.success) {
-      isCodeSent.value = true
-      startCountdown()
-      error.value = ''
-    } else {
-      error.value = response.data.message || '验证码发送失败'
-    }
-  } catch (e) {
-    error.value = '发送验证码时出现错误'
+const handleSubmit = () => {
+  if (password.value !== confirmPassword.value) {
+    error.value = 'Passwords do not match'
+    return
   }
-}
 
-// 开始倒计时
-const startCountdown = () => {
-  countdown.value = 60
-  buttonText.value = `重新发送(${countdown.value}s)`
+  authStore.register({
+    username: username.value,
+    email: email.value,
+    password: password.value,
+    verificationCode: verificationCode.value
+  })
 
-  timer.value = window.setInterval(() => {
-    countdown.value--
-    buttonText.value = `重新发送(${countdown.value}s)`
-
-    if (countdown.value <= 0) {
-      if (timer.value) {
-        clearInterval(timer.value)
-        timer.value = null
-      }
-      buttonText.value = '重新发送验证码'
-      isCodeSent.value = false
-    }
-  }, 1000)
-}
-
-// 注册提交
-const handleSubmit = async () => {
-  try {
-    // 基础验证
-    if (password.value !== confirmPassword.value) {
-      error.value = '两次输入的密码不匹配'
-      return
-    }
-
-    if (!isCodeSent.value) {
-      // 如果验证码还未发送，则发送验证码
-      await sendVerificationCode()
-      return
-    }
-
-    // 验证码已发送，进行注册
-    const response = await axios.post('/api/register', {
-      username: username.value,
-      email: email.value,
-      password: password.value,
-      verificationCode: verificationCode.value
-    })
-
-    if (response.data.success) {
-      router.push({ name: 'login' })
-    } else {
-      error.value = response.data.message || '注册失败'
-    }
-  } catch (e) {
-    error.value = '注册过程中出现错误'
-  }
+  emit('close')
+  router.push('/login')
 }
 
 const handleClose = () => {
-  if (timer.value) {
-    clearInterval(timer.value)
-  }
-  router.back()
+  emit('close')
 }
 </script>
 
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center" @click.self="handleClose">
     <div class="max-w-md w-full mx-4">
       <div :class="[
         'rounded-lg p-8 relative',
-        themeStore.isDark ? 'bg-gray-800' : 'bg-white'
+        themeStore.isDark ? 'bg-gray-800/95' : 'bg-white/95'
       ]">
         <button
             @click="handleClose"
@@ -181,39 +109,34 @@ const handleClose = () => {
             />
           </div>
 
-          <div class="relative">
+          <div>
             <label class="block text-sm font-medium mb-1">Verification Code</label>
-            <div class="flex gap-2">
-              <input
-                  v-model="verificationCode"
-                  type="text"
-                  required
-                  :disabled="!isCodeSent"
-                  :class="[
-                  'flex-1 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-                  themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100',
-                  !isCodeSent ? 'opacity-50' : ''
-                ]"
-              />
-            </div>
+            <input
+                v-model="verificationCode"
+                type="text"
+                required
+                :class="[
+                'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
+              ]"
+            />
           </div>
 
           <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
 
           <button
               type="submit"
-              :disabled="isCodeSent && !verificationCode"
-              class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {{ isCodeSent ? 'Register' : buttonText }}
+            Register
           </button>
         </form>
 
         <p class="mt-4 text-sm text-center">
           Already have an account?
-          <router-link to="/login" class="text-blue-500 hover:underline">
+          <button @click="$emit('show-login')" class="text-blue-500 hover:underline">
             Login here
-          </router-link>
+          </button>
         </p>
       </div>
     </div>

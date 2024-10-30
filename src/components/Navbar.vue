@@ -4,6 +4,8 @@ import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
 
+const emit = defineEmits(['show-login', 'show-register'])
+
 const categories = ['Action', 'Drama', 'Comedy', 'Sci-Fi', 'Horror']
 const searchQuery = ref('')
 const showUserMenu = ref(false)
@@ -19,32 +21,12 @@ const handleSearch = () => {
 const handleClickOutside = (event: MouseEvent) => {
   const userMenu = document.getElementById('user-menu')
   const userButton = document.getElementById('user-button')
-  
-  if (userMenu && userButton && 
-      !userMenu.contains(event.target as Node) && 
+
+  if (userMenu && userButton &&
+      !userMenu.contains(event.target as Node) &&
       !userButton.contains(event.target as Node)) {
     showUserMenu.value = false
   }
-}
-
-// 修改打开注册窗口的方法
-const openRegister = () => {
-  // 获取当前路径
-  const currentPath = route.path
-  // 在当前路径后添加 /register
-  const targetPath = `${currentPath}${currentPath.endsWith('/') ? 'register' : '/register'}`
-  router.push(targetPath)
-  showUserMenu.value = false
-}
-
-// 修改打开登录窗口的方法
-const openLogin = () => {
-  // 获取当前路径
-  const currentPath = route.path
-  // 在当前路径后添加 /login
-  const targetPath = `${currentPath}${currentPath.endsWith('/') ? 'login' : '/login'}`
-  router.push(targetPath)
-  showUserMenu.value = false
 }
 
 onMounted(() => {
@@ -66,10 +48,10 @@ onUnmounted(() => {
         <div class="flex items-center space-x-8">
           <router-link to="/" class="text-xl font-bold">MovieHub</router-link>
           <div class="hidden md:flex space-x-4">
-            <router-link v-for="category in categories" 
-              :key="category"
-              :to="'/category/' + category.toLowerCase()"
-              :class="[
+            <router-link v-for="category in categories"
+                         :key="category"
+                         :to="'/category/' + category.toLowerCase()"
+                         :class="[
                 'transition-colors',
                 themeStore.isDark ? 'hover:text-gray-300' : 'hover:text-gray-600'
               ]">
@@ -80,9 +62,9 @@ onUnmounted(() => {
 
         <div class="flex items-center space-x-4">
           <button
-            @click="themeStore.toggleTheme"
-            class="p-2 rounded-lg"
-            :class="themeStore.isDark ? 'bg-gray-700' : 'bg-gray-200'"
+              @click="themeStore.toggleTheme"
+              class="p-2 rounded-lg"
+              :class="themeStore.isDark ? 'bg-gray-700' : 'bg-gray-200'"
           >
             <span v-if="themeStore.isDark">🌞</span>
             <span v-else>🌙</span>
@@ -90,11 +72,11 @@ onUnmounted(() => {
 
           <div class="relative">
             <input
-              v-model="searchQuery"
-              @keyup.enter="handleSearch"
-              type="text"
-              placeholder="搜索电影..."
-              :class="[
+                v-model="searchQuery"
+                @keyup.enter="handleSearch"
+                type="text"
+                placeholder="Search movies..."
+                :class="[
                 'px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
               ]"
@@ -103,9 +85,9 @@ onUnmounted(() => {
 
           <div class="relative">
             <button
-              id="user-button"
-              @click="showUserMenu = !showUserMenu"
-              :class="[
+                id="user-button"
+                @click="showUserMenu = !showUserMenu"
+                :class="[
                 'w-10 h-10 rounded-full flex items-center justify-center',
                 themeStore.isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
               ]"
@@ -113,23 +95,23 @@ onUnmounted(() => {
               <span class="text-xl">👤</span>
             </button>
 
-            <div v-if="showUserMenu" 
-              id="user-menu"
-              :class="[
+            <div v-if="showUserMenu"
+                 id="user-menu"
+                 :class="[
                 'absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-2',
                 themeStore.isDark ? 'bg-gray-800' : 'bg-white'
               ]">
               <!-- Guest Menu -->
               <template v-if="!authStore.isAuthenticated">
-                <button 
-                  @click="openRegister"
-                  :class="[
+                <button
+                    @click="emit('show-register')"
+                    :class="[
                     'block w-full text-left px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">Register</button>
-                <button 
-                  @click="openLogin"
-                  :class="[
+                <button
+                    @click="emit('show-login')"
+                    :class="[
                     'block w-full text-left px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">Login</button>
@@ -137,19 +119,19 @@ onUnmounted(() => {
 
               <!-- Authenticated User Menu -->
               <template v-else>
-                <router-link to="/profile" 
-                  :class="[
+                <router-link to="/profile"
+                             :class="[
                     'block px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">Profile</router-link>
-                <router-link to="/settings" 
-                  :class="[
+                <router-link to="/settings"
+                             :class="[
                     'block px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">Settings</router-link>
-                <button 
-                  @click="authStore.logout"
-                  :class="[
+                <button
+                    @click="authStore.logout"
+                    :class="[
                     'block w-full text-left px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">
