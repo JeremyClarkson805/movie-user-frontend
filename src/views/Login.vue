@@ -1,0 +1,113 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useThemeStore } from '../stores/theme'
+import { useAuthStore } from '../stores/auth'
+
+const router = useRouter()
+const themeStore = useThemeStore()
+const authStore = useAuthStore()
+
+const email = ref('')
+const password = ref('')
+const error = ref('')
+const isLoading = ref(false)
+
+const handleSubmit = async () => {
+  try {
+    isLoading.value = true
+    await authStore.login({ email: email.value, password: password.value })
+    router.push('/')
+  } catch (err) {
+    error.value = 'Invalid email or password'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const handleClose = () => {
+  router.back()
+}
+
+const handleForgotPassword = () => {
+  // Implement forgot password logic
+  console.log('Forgot password clicked')
+}
+</script>
+
+<template>
+  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" @click.self="handleClose">
+    <div class="max-w-md w-full mx-4">
+      <div :class="[
+        'rounded-lg p-8 relative',
+        themeStore.isDark ? 'bg-gray-800' : 'bg-white'
+      ]">
+        <button
+          @click="handleClose"
+          class="absolute right-6 top-6 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+
+        <h1 class="text-2xl font-bold mb-6">Login</h1>
+        
+        <form @submit.prevent="handleSubmit" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Email</label>
+            <input
+              v-model="email"
+              type="email"
+              required
+              :class="[
+                'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
+              ]"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Password</label>
+            <input
+              v-model="password"
+              type="password"
+              required
+              :class="[
+                'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
+              ]"
+            />
+          </div>
+
+          <div class="flex justify-end">
+            <button
+              type="button"
+              @click="handleForgotPassword"
+              class="text-sm text-blue-500 hover:underline"
+            >
+              Forgot Password?
+            </button>
+          </div>
+
+          <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
+
+          <button
+            type="submit"
+            :disabled="isLoading"
+            class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ isLoading ? 'Logging in...' : 'Login' }}
+          </button>
+        </form>
+
+        <p class="mt-4 text-sm text-center">
+          Don't have an account?
+          <button @click="router.push('/register')" class="text-blue-500 hover:underline">
+            Register here
+          </button>
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
