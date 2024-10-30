@@ -15,6 +15,8 @@ const password = ref('')
 const confirmPassword = ref('')
 const verificationCode = ref('')
 const error = ref('')
+const isVerificationSent = ref(false)
+const isVerificationLoading = ref(false)
 
 const handleSubmit = () => {
   if (password.value !== confirmPassword.value) {
@@ -35,6 +37,25 @@ const handleSubmit = () => {
 
 const handleClose = () => {
   emit('close')
+}
+
+const sendVerificationCode = async () => {
+  if (!email.value) {
+    error.value = 'Please enter your email first'
+    return
+  }
+
+  try {
+    isVerificationLoading.value = true
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    isVerificationSent.value = true
+    error.value = ''
+  } catch (err) {
+    error.value = 'Failed to send verification code'
+  } finally {
+    isVerificationLoading.value = false
+  }
 }
 </script>
 
@@ -71,19 +92,6 @@ const handleClose = () => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1">Email</label>
-            <input
-                v-model="email"
-                type="email"
-                required
-                :class="[
-                'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-                themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
-              ]"
-            />
-          </div>
-
-          <div>
             <label class="block text-sm font-medium mb-1">Password</label>
             <input
                 v-model="password"
@@ -110,6 +118,35 @@ const handleClose = () => {
           </div>
 
           <div>
+            <label class="block text-sm font-medium mb-1">Email</label>
+            <div class="flex space-x-2">
+              <input
+                  v-model="email"
+                  type="email"
+                  required
+                  :class="[
+                  'flex-1 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                  themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
+                ]"
+              />
+              <button
+                  type="button"
+                  @click="sendVerificationCode"
+                  :disabled="isVerificationLoading"
+                  :class="[
+                  'px-4 py-2 rounded-lg transition-colors whitespace-nowrap',
+                  isVerificationSent
+                    ? themeStore.isDark ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'
+                    : 'bg-blue-600 hover:bg-blue-700',
+                  'text-white disabled:opacity-50 disabled:cursor-not-allowed'
+                ]"
+              >
+                {{ isVerificationLoading ? 'Sending...' : isVerificationSent ? 'Resend Code' : 'Send Code' }}
+              </button>
+            </div>
+          </div>
+
+          <div>
             <label class="block text-sm font-medium mb-1">Verification Code</label>
             <input
                 v-model="verificationCode"
@@ -123,6 +160,9 @@ const handleClose = () => {
           </div>
 
           <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
+          <div v-if="isVerificationSent" class="text-green-500 text-sm">
+            Verification code sent! Please check your email.
+          </div>
 
           <button
               type="submit"
