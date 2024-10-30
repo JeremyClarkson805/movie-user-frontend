@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
@@ -17,46 +17,159 @@ const verificationCode = ref('')
 const error = ref('')
 const isVerificationSent = ref(false)
 const isVerificationLoading = ref(false)
+const isRegistered = ref(false)
+const isRegistering = ref(false)
 
-const handleSubmit = () => {
+const validateEmail = (email: string) => {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email)
+}
+
+const validatePasswords = () => {
+  if (!password.value || !confirmPassword.value) {
+    error.value = '请输入密码'
+    return false
+  }
+
   if (password.value !== confirmPassword.value) {
-    error.value = 'Passwords do not match'
+    error.value = '两次输入的密码不一致'
+    return false
+  }
+
+  return true
+}
+
+const sendVerificationCode = async () => {
+  error.value = ''
+
+  if (!email.value) {
+    error.value = '请输入邮箱'
     return
   }
 
-  authStore.register({
-    username: username.value,
-    email: email.value,
-    password: password.value,
-    verificationCode: verificationCode.value
-  })
+  if (!validateEmail(email.value)) {
+    error.value = '请输入有效的邮箱地址'
+    return
+  }
 
-  emit('close')
-  router.push('/login')
+  if (!username.value) {
+    error.value = '请输入用户名'
+    return
+  }
+
+  if (!validatePasswords()) {
+    return
+  }
+
+  try {
+    isVerificationLoading.value = true
+
+    const encoder = new TextEncoder()
+    const data = encoder.encode(password.value)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const hashedPassword = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase()
+
+    const response = await fetch('http://127.0.0.1:8083/api/user/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        userName: username.value,
+        email: email.value,
+        passwd: hashedPassword
+      })
+    })
+
+    const responseData = await response.json()
+
+    if (responseData.code === 200) {
+      isVerificationSent.value = true
+      error.value = ''
+    } else {
+      error.value = responseData.message || '验证码发送失败'
+      isVerificationSent.value = false
+    }
+  } catch (err) {
+    console.error('API调用错误:', err)
+    error.value = '验证码发送失败,请稍后重试'
+    isVerificationSent.value = false
+  } finally {
+    isVerificationLoading.value = false
+  }
+}
+
+const handleSubmit = async () => {
+  error.value = ''
+
+  if (!validatePasswords()) {
+    return
+  }
+
+  if (!isVerificationSent.value) {
+    error.value = '请先获取验证码'
+    return
+  }
+
+  if (!verificationCode.value) {
+    error.value = '请输入验证码'
+    return
+  }
+
+  try {
+    isRegistering.value = true
+
+    const response = await fetch('http://127.0.0.1:8083/api/user/register/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        email: email.value,
+        code: verificationCode.value
+      })
+    })
+
+    const responseData = await response.json()
+
+    if (responseData.code === 200) {
+      isRegistered.value = true
+    } else {
+      error.value = responseData.message || '注册失败,请重试'
+    }
+  } catch (err) {
+    console.error('注册失败:', err)
+    error.value = '注册失败,请稍后重试'
+  } finally {
+    isRegistering.value = false
+  }
 }
 
 const handleClose = () => {
   emit('close')
 }
 
-const sendVerificationCode = async () => {
-  if (!email.value) {
-    error.value = 'Please enter your email first'
-    return
-  }
-
-  try {
-    isVerificationLoading.value = true
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    isVerificationSent.value = true
+const validatePasswordMatch = () => {
+  if (password.value && confirmPassword.value && password.value !== confirmPassword.value) {
+    error.value = '两次输入的密码不一致'
+  } else {
     error.value = ''
-  } catch (err) {
-    error.value = 'Failed to send verification code'
-  } finally {
-    isVerificationLoading.value = false
   }
 }
+
+watch([password, confirmPassword], () => {
+  if (password.value && confirmPassword.value) {
+    validatePasswordMatch()
+  }
+})
+
+const handleShowLogin = () => {
+  router.push('/login')
+}
+
 </script>
 
 <template>
@@ -75,11 +188,11 @@ const sendVerificationCode = async () => {
           </svg>
         </button>
 
-        <h1 class="text-2xl font-bold mb-6">Create Account</h1>
+        <h1 class="text-2xl font-bold mb-6">注册新账户</h1>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium mb-1">Username</label>
+            <label class="block text-sm font-medium mb-1">用户名</label>
             <input
                 v-model="username"
                 type="text"
@@ -92,11 +205,12 @@ const sendVerificationCode = async () => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1">Password</label>
+            <label class="block text-sm font-medium mb-1">密码</label>
             <input
                 v-model="password"
                 type="password"
                 required
+                @input="validatePasswordMatch"
                 :class="[
                 'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
@@ -105,11 +219,12 @@ const sendVerificationCode = async () => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1">Confirm Password</label>
+            <label class="block text-sm font-medium mb-1">确认密码</label>
             <input
                 v-model="confirmPassword"
                 type="password"
                 required
+                @input="validatePasswordMatch"
                 :class="[
                 'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
@@ -118,7 +233,7 @@ const sendVerificationCode = async () => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1">Email</label>
+            <label class="block text-sm font-medium mb-1">电子邮箱</label>
             <div class="flex space-x-2">
               <input
                   v-model="email"
@@ -141,13 +256,13 @@ const sendVerificationCode = async () => {
                   'text-white disabled:opacity-50 disabled:cursor-not-allowed'
                 ]"
               >
-                {{ isVerificationLoading ? 'Sending...' : isVerificationSent ? 'Resend Code' : 'Send Code' }}
+                {{ isVerificationLoading ? '发送中...' : isVerificationSent ? '重新发送' : '发送验证码' }}
               </button>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1">Verification Code</label>
+            <label class="block text-sm font-medium mb-1">验证码</label>
             <input
                 v-model="verificationCode"
                 type="text"
@@ -159,23 +274,32 @@ const sendVerificationCode = async () => {
             />
           </div>
 
-          <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
-          <div v-if="isVerificationSent" class="text-green-500 text-sm">
-            Verification code sent! Please check your email.
+          <div v-if="error" class="text-red-500 text-sm mt-2">{{ error }}</div>
+          <div v-if="isVerificationSent" class="text-green-500 text-sm mt-2">
+            验证码已发送,请查收邮件
           </div>
 
           <button
               type="submit"
-              class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              :disabled="isRegistering"
+              :class="[
+              'w-full py-2 px-4 rounded-lg transition-colors',
+              isRegistering
+                ? 'bg-blue-400 cursor-not-allowed'
+                : isRegistered
+                  ? 'bg-green-500 hover:bg-green-600'
+                  : 'bg-blue-600 hover:bg-blue-700',
+              'text-white'
+            ]"
           >
-            Register
+            {{ isRegistering ? '注册中...' : isRegistered ? '注册成功' : '注册' }}
           </button>
         </form>
 
         <p class="mt-4 text-sm text-center">
-          Already have an account?
-          <button @click="$emit('show-login')" class="text-blue-500 hover:underline">
-            Login here
+          已有账号？
+          <button @click="handleShowLogin" class="text-blue-500 hover:underline">
+            点此登录
           </button>
         </p>
       </div>
