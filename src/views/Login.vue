@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close','show-register'])
 const router = useRouter()
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
@@ -13,6 +13,7 @@ const email = ref('')
 const password = ref('')
 const error = ref('')
 const isLoading = ref(false)
+// const isLoggingIn = ref(false)
 
 const handleSubmit = async () => {
   try {
@@ -27,12 +28,16 @@ const handleSubmit = async () => {
   }
 }
 
-const handleClose = () => {
-  emit('close')
-}
-
 const handleForgotPassword = () => {
   console.log('Forgot password clicked')
+}
+
+const handleShowRegister = () => {
+  emit('show-register')
+}
+
+const handleClose = () => {
+  emit('close')
 }
 </script>
 
@@ -52,11 +57,11 @@ const handleForgotPassword = () => {
           </svg>
         </button>
 
-        <h1 class="text-2xl font-bold mb-6">Login</h1>
+        <h1 class="text-2xl font-bold mb-6">登录</h1>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium mb-1">Email</label>
+            <label class="block text-sm font-medium mb-1">邮箱</label>
             <input
                 v-model="email"
                 type="email"
@@ -69,7 +74,7 @@ const handleForgotPassword = () => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1">Password</label>
+            <label class="block text-sm font-medium mb-1">密码</label>
             <input
                 v-model="password"
                 type="password"
@@ -87,7 +92,7 @@ const handleForgotPassword = () => {
                 @click="handleForgotPassword"
                 class="text-sm text-blue-500 hover:underline"
             >
-              Forgot Password?
+              忘记密码?
             </button>
           </div>
 
@@ -103,9 +108,9 @@ const handleForgotPassword = () => {
         </form>
 
         <p class="mt-4 text-sm text-center">
-          Don't have an account?
-          <button @click="$emit('show-register')" class="text-blue-500 hover:underline">
-            Register here
+          还没有账户?
+          <button @click="handleShowRegister" class="text-blue-500 hover:underline">
+            点此注册
           </button>
         </p>
       </div>

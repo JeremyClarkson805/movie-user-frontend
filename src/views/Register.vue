@@ -70,7 +70,7 @@ const sendVerificationCode = async () => {
     const hashArray = Array.from(new Uint8Array(hashBuffer))
     const hashedPassword = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase()
 
-    const response = await fetch('http://127.0.0.1:8083/api/user/register', {
+    const response = await fetch('/api/user/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ const sendVerificationCode = async () => {
         userName: username.value,
         email: email.value,
         passwd: hashedPassword
-      })
+      }),
     })
 
     const responseData = await response.json()
@@ -121,7 +121,7 @@ const handleSubmit = async () => {
   try {
     isRegistering.value = true
 
-    const response = await fetch('http://127.0.0.1:8083/api/user/register/verify', {
+    const response = await fetch('/api/user/register/verify', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ watch([password, confirmPassword], () => {
 })
 
 const handleShowLogin = () => {
-  router.push('/login')
+  emit('show-login')
 }
 
 </script>

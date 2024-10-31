@@ -15,6 +15,24 @@ onMounted(() => {
     document.documentElement.classList.add('dark')
   }
 })
+
+const handleShowLogin = () => {
+  showLogin.value = true
+  showRegister.value = false
+}
+
+const handleCloseLogin = () => {
+  showLogin.value = false
+}
+
+const handleShowRegister = () => {
+  showRegister.value = true
+  showLogin.value = false
+}
+
+const handleCloseRegister = () => {
+  showRegister.value = false
+}
 </script>
 
 <template>
@@ -22,12 +40,12 @@ onMounted(() => {
     'min-h-screen transition-colors duration-200',
     themeStore.isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
   ]">
-    <Navbar @show-login="showLogin = true" @show-register="showRegister = true" />
+    <Navbar @show-login="handleShowLogin" @show-register="handleShowRegister" />
     <main class="container mx-auto px-4 py-8">
       <router-view></router-view>
     </main>
 
-    <Login v-if="showLogin" @close="showLogin = false" />
-    <Register v-if="showRegister" @close="showRegister = false" />
+    <Login v-if="showLogin" @close="handleCloseLogin" @show-register="handleShowRegister" />
+    <Register v-if="showRegister" @close="handleCloseRegister" @show-login="handleShowLogin" />
   </div>
 </template>

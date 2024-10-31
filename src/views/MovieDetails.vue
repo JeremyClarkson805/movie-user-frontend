@@ -57,7 +57,10 @@ const movie = ref<MovieDetail>({
 const fetchMovieDetail = async (id: string | string[]) => {
   try {
     console.log('Fetching movie details for ID:', id)
-    const response = await axios.get(`http://127.0.0.1:8081/api/movie/detail?id=${id}`)
+    const response = await axios.get(`/api/movie/detail?id=${id}`, {
+      // 添加这个配置
+      // withCredentials: true
+    })
     console.log('API response:', response.data)
     if (response.data.code === 200) {
       movie.value = {

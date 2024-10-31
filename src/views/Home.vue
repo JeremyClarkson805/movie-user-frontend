@@ -67,7 +67,7 @@ const fetchMovies = async () => {
       pageSize: pageSize.value.toString()
     })
     
-    const response = await axios.get(`http://127.0.0.1:8081/api/movie/list?${params}`)
+    const response = await axios.get(`/api/movie/list?${params}`)
     console.log('API Response:', response.data)
     
     if (response.data.code === 200) {
