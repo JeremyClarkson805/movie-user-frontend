@@ -4,40 +4,42 @@ import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
 
-const emit = defineEmits(['close','show-register'])
+const emit = defineEmits(['close', 'show-register'])
 const router = useRouter()
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
-const error = ref('')
 const isLoading = ref(false)
-// const isLoggingIn = ref(false)
 
 const handleSubmit = async () => {
   try {
     isLoading.value = true
-    await authStore.login({ email: email.value, password: password.value })
-    emit('close')
-    router.push('/')
-  } catch (err) {
-    error.value = 'Invalid email or password'
+    const success = await authStore.login({
+      email: email.value,
+      password: password.value
+    })
+
+    if (success) {
+      emit('close')
+    }
   } finally {
     isLoading.value = false
   }
 }
 
-const handleForgotPassword = () => {
-  console.log('Forgot password clicked')
+const handleClose = () => {
+  emit('close')
 }
 
-const handleShowRegister = () => {
+const switchToRegister = () => {
+  emit('close')
   emit('show-register')
 }
 
-const handleClose = () => {
-  emit('close')
+const handleForgotPassword = () => {
+  console.log('Forgot password clicked')
 }
 </script>
 
@@ -57,11 +59,11 @@ const handleClose = () => {
           </svg>
         </button>
 
-        <h1 class="text-2xl font-bold mb-6">登录</h1>
+        <h1 class="text-2xl font-bold mb-6">Login</h1>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium mb-1">邮箱</label>
+            <label class="block text-sm font-medium mb-1">Email</label>
             <input
                 v-model="email"
                 type="email"
@@ -74,7 +76,7 @@ const handleClose = () => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1">密码</label>
+            <label class="block text-sm font-medium mb-1">Password</label>
             <input
                 v-model="password"
                 type="password"
@@ -92,11 +94,11 @@ const handleClose = () => {
                 @click="handleForgotPassword"
                 class="text-sm text-blue-500 hover:underline"
             >
-              忘记密码?
+              Forgot Password?
             </button>
           </div>
 
-          <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
+          <div v-if="authStore.error" class="text-red-500 text-sm">{{ authStore.error }}</div>
 
           <button
               type="submit"
@@ -108,9 +110,9 @@ const handleClose = () => {
         </form>
 
         <p class="mt-4 text-sm text-center">
-          还没有账户?
-          <button @click="handleShowRegister" class="text-blue-500 hover:underline">
-            点此注册
+          Don't have an account?
+          <button @click="switchToRegister" class="text-blue-500 hover:underline">
+            Register here
           </button>
         </p>
       </div>

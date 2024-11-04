@@ -28,6 +28,11 @@ const movies = ref<Movie[]>([])
 const totalPages = ref(0)
 const loading = ref(false)
 
+const getAuthHeader = () => {
+  const token = localStorage.getItem('authorization')
+  return token ? { 'Authorization': token } : {}
+}
+
 const paginationArray = computed(() => {
   const delta = 2
   const range = []
@@ -67,7 +72,13 @@ const fetchMovies = async () => {
       pageSize: pageSize.value.toString()
     })
     
-    const response = await axios.get(`/api/movie/list?${params}`)
+    const response = await axios.get(`/api/movie/list?${params}`,
+        {
+          headers: {
+            ...getAuthHeader()
+          }
+        }
+    )
     console.log('API Response:', response.data)
     
     if (response.data.code === 200) {

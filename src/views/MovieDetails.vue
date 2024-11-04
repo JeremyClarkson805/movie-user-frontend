@@ -54,12 +54,18 @@ const movie = ref<MovieDetail>({
   ]
 })
 
+const getAuthHeader = () => {
+  const token = localStorage.getItem('authorization')
+  return token ? { 'Authorization': token } : {}
+}
+
 const fetchMovieDetail = async (id: string | string[]) => {
   try {
     console.log('Fetching movie details for ID:', id)
     const response = await axios.get(`/api/movie/detail?id=${id}`, {
-      // 添加这个配置
-      // withCredentials: true
+      headers: {
+        ...getAuthHeader()
+      }
     })
     console.log('API response:', response.data)
     if (response.data.code === 200) {
