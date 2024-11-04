@@ -32,7 +32,7 @@ onMounted(async () => {
   }
 
   // 检查本地存储中是否存在Authorization token
-  const localAuth = localStorage.getItem('Authorization')
+  const localAuth = localStorage.getItem('userToken')
 
   // 只在没有Authorization token时初始化游客功能
   if (!localAuth) {

@@ -1,7 +1,7 @@
 // API configuration
 export const API_CONFIG = {
     // Using relative URL to leverage Vite's proxy
-    baseURL: '/api',
+    baseURL: '',
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -13,7 +13,7 @@ export const getAuthHeader = () => {
     const userToken = localStorage.getItem('userToken')
     const guestToken = localStorage.getItem('guestToken')
     return userToken || guestToken
-        ? { 'Authorization': `Bearer ${userToken || guestToken}` }
+        ? { 'Authorization': `${userToken || guestToken}` }
         : {}
 }
 

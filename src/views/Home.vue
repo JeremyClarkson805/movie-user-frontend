@@ -28,9 +28,17 @@ const movies = ref<Movie[]>([])
 const totalPages = ref(0)
 const loading = ref(false)
 
+// const getAuthHeader = () => {
+//   const token = localStorage.getItem('authorization')
+//   return token ? { 'Authorization': token } : {}
+// }
+
 const getAuthHeader = () => {
-  const token = localStorage.getItem('authorization')
-  return token ? { 'Authorization': token } : {}
+  const userToken = localStorage.getItem('userToken')
+  const guestToken = localStorage.getItem('guestToken')
+  return userToken || guestToken
+      ? { 'Authorization': `${userToken || guestToken}` }
+      : {}
 }
 
 const paginationArray = computed(() => {

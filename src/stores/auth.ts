@@ -55,7 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
       const hashArray = Array.from(new Uint8Array(hashBuffer))
       const hashedPassword = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase()
 
-      const result = await apiRequest<LoginResponse>('/user/login', {
+      const result = await apiRequest<LoginResponse>('/api/user/login', {
         method: 'POST',
         body: JSON.stringify({
           email: credentials.email,

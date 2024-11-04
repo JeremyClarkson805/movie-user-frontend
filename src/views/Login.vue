@@ -23,6 +23,7 @@ const handleSubmit = async () => {
 
     if (success) {
       emit('close')
+
     }
   } finally {
     isLoading.value = false
