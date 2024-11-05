@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
-import axios from 'axios'
+import { apiService } from '../services/api'
 
 const route = useRoute()
 const themeStore = useThemeStore()
@@ -54,28 +54,12 @@ const movie = ref<MovieDetail>({
   ]
 })
 
-const getAuthHeader = () => {
-  const userToken = localStorage.getItem('userToken')
-  const guestToken = localStorage.getItem('guestToken')
-  return userToken || guestToken
-      ? { 'Authorization': `${userToken || guestToken}` }
-      : {}
-}
-
 const fetchMovieDetail = async (id: string | string[]) => {
   try {
-    console.log('Fetching movie details for ID:', id)
-    const response = await axios.get(`/api/movie/detail?id=${id}`, {
-      headers: {
-        ...getAuthHeader()
-      }
-    })
-    console.log('API response:', response.data)
-    if (response.data.code === 200) {
-      movie.value = {
-        ...response.data.data,
-        downloads: movie.value.downloads
-      }
+    const response = await apiService.movies.getDetail(id)
+    movie.value = {
+      ...response.data,
+      downloads: movie.value.downloads
     }
   } catch (error) {
     console.error('Failed to fetch movie details:', error)
@@ -91,39 +75,39 @@ onMounted(() => {
 })
 </script>
 
+<!-- Template remains unchanged -->
 <template>
   <div class="pt-20">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div class="md:col-span-1">
         <img :src="movie.posterUrl" :alt="movie.title"
-          class="w-full rounded-lg shadow-xl" />
+             class="w-full rounded-lg shadow-xl" />
       </div>
-      
+
       <div class="md:col-span-2">
         <h1 class="text-4xl font-bold mb-4">{{ movie.title }}</h1>
-        <div class="space-y-6">  
+        <div class="space-y-6">
           <div>
             <h2 class="text-xl font-semibold mb-2">导演</h2>
             <p class=" font-medium">{{ movie.director }}</p>
           </div>
-          
+
           <div>
             <h2 class="text-xl font-semibold mb-3">演员</h2>
-            <div class="space-y-2">  <!-- 为演员列表添加独立的间距容器 -->
+            <div class="space-y-2">
               <p v-for="actor in movie.actors" :key="actor.id" class="pl-2 font-medium">
                 {{ actor.name }}
               </p>
             </div>
           </div>
-          
+
           <div>
             <h2 class="text-xl font-semibold mb-2">编剧</h2>
-            <!-- <p class=" font-medium">{{ movie.writers.map(writer => writer.name).join(', ') }}</p> -->
             <p v-for="writer in movie.writers" :key="writer.id" class="pl-2 font-medium">
-                {{ writer.name }}
-              </p>
+              {{ writer.name }}
+            </p>
           </div>
-          
+
           <div>
             <h2 class="text-xl font-semibold mb-2">简介</h2>
             <p class=" font-medium":class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'">
@@ -137,14 +121,14 @@ onMounted(() => {
               {{ movie.releaseYear }}  |  {{ movie.country }}  |  评分: {{ movie.rating }}
             </p>
           </div>
-          
+
           <div>
             <h2 class="text-xl font-semibold mb-4">下载链接</h2>
             <div class="grid gap-4">
               <a v-for="download in movie.downloads"
-                :key="download.quality"
-                :href="download.link"
-                :class="[
+                 :key="download.quality"
+                 :href="download.link"
+                 :class="[
                   'flex items-center justify-between p-4 rounded-lg transition-colors',
                   themeStore.isDark
                     ? 'bg-gray-800 hover:bg-gray-700'

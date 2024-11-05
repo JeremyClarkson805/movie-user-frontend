@@ -1,15 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
-import { apiRequest } from '../config/api'
-
-interface GuestResponse {
-    code: number
-    message: string
-    data: {
-        token: string
-    }
-}
+import { apiService } from '../services/api'
 
 export const useGuestStore = defineStore('guest', () => {
     const guestToken = ref<string | null>(null)
@@ -33,19 +25,15 @@ export const useGuestStore = defineStore('guest', () => {
             const result = await fp.get()
             const fingerprint = result.visitorId
 
-            // Get guest token from API
-            const response = await apiRequest<GuestResponse>('/api/user/guest', {
-                method: 'POST',
-                body: JSON.stringify({
-                    fingerprint,
-                    userAgent: navigator.userAgent,
-                    ip: await getClientIP()
-                })
-            })
+            // Get client IP
+            const ip = await getClientIP()
 
-            if (response.code !== 200) {
-                throw new Error(response.message || 'Failed to get guest token')
-            }
+            // Get guest token from API
+            const response = await apiService.guest.initialize({
+                fingerprint,
+                userAgent: navigator.userAgent,
+                ip
+            })
 
             guestToken.value = response.data.token
             localStorage.setItem('guestToken', response.data.token)

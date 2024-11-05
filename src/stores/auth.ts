@@ -2,18 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGuestStore } from './guest'
-import { apiRequest } from '../config/api'
-
-interface LoginResponse {
-  code: number
-  message: string
-  data: {
-    token: string
-    userId: string
-    username: string
-    balance: number
-  }
-}
+import { apiService } from '../services/api'
 
 interface UserInfo {
   userId: string
@@ -47,25 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
   const login = async (credentials: { email: string; password: string }) => {
     try {
       error.value = null
-
-      // Hash the password using SHA-256
-      const encoder = new TextEncoder()
-      const data = encoder.encode(credentials.password)
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-      const hashArray = Array.from(new Uint8Array(hashBuffer))
-      const hashedPassword = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase()
-
-      const result = await apiRequest<LoginResponse>('/api/user/login', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: credentials.email,
-          passwd: hashedPassword
-        })
-      })
-
-      if (result.code !== 200) {
-        throw new Error(result.message || 'Login failed')
-      }
+      const result = await apiService.auth.login(credentials)
 
       // Store token and user info
       token.value = result.data.token

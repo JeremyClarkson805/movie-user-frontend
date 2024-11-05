@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import MovieCard from '../components/MovieCard.vue'
 import { useThemeStore } from '../stores/theme'
+import { apiService } from '../services/api'
 
 interface Movie {
   movieId: number
@@ -33,47 +34,23 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 
-const getAuthHeader = () => {
-  const token = localStorage.getItem('authorization')
-  return token ? { 'Authorization': token } : {}
-}
-
 const searchMovies = async (query: string, page: number = 1) => {
   isLoading.value = true
   error.value = ''
 
   try {
-    const formData = new URLSearchParams()
-    formData.append('page', page.toString())
-    formData.append('pageSize', pageSize.value.toString())
-    formData.append('title', query)
-
-    const response = await fetch(`/api/movie/list?title=${route.query.q}`, {
-      method: 'GET',
-      headers: {
-        ...getAuthHeader()
-      },
-      // 添加错误处理选项
-      mode: 'cors',
-      credentials: 'include'
+    const response = await apiService.movies.getList({
+      title: query,
+      page,
+      pageSize: pageSize.value
     })
 
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`)
-    }
-
-    const data: SearchResponse = await response.json()
-
-    if (data.code === 200) {
-      searchResults.value = data.data.list.map(movie => ({
-        ...movie,
-        rating: movie.rating || 0
-      }))
-      total.value = data.data.total
-      currentPage.value = data.data.pageNum
-    } else {
-      throw new Error(data.message || 'Failed to search movies')
-    }
+    searchResults.value = response.data.list.map(movie => ({
+      ...movie,
+      rating: movie.rating || 0
+    }))
+    total.value = response.data.total
+    currentPage.value = response.data.pageNum
   } catch (err) {
     console.error('Search error:', err)
     error.value = err instanceof Error
@@ -101,6 +78,7 @@ watch(() => route.query.q, (newQuery) => {
 }, { immediate: true })
 </script>
 
+<!-- Template remains unchanged -->
 <template>
   <div class="pt-20">
     <div class="container mx-auto px-4">
