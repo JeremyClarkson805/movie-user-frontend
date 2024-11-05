@@ -1,6 +1,7 @@
 import axios from 'axios'
-import type { AxiosInstance } from 'axios'
+import type { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
 import { API_CONFIG } from '../config/api'
+import { useGuestStore } from '../stores/guest'
 
 // Create axios instance with default config
 const apiClient: AxiosInstance = axios.create({
@@ -33,7 +34,31 @@ apiClient.interceptors.response.use(
         }
         return Promise.reject(new Error(response.data.message || 'Request failed'))
     },
-    (error) => {
+    async (error: AxiosError) => {
+        const originalRequest = error.config
+
+        // Check if error is 401 and there's no userToken (guest mode)
+        if (error.response?.status === 401 && !localStorage.getItem('userToken') && originalRequest) {
+            // Initialize guest store
+            const guestStore = useGuestStore()
+
+            try {
+                // Force refresh guest token
+                await guestStore.initializeGuest(true)
+
+                // Get new token
+                const newToken = localStorage.getItem('guestToken')
+                if (newToken) {
+                    // Update Authorization header
+                    originalRequest.headers.Authorization = newToken
+                    // Retry the original request with the new token
+                    return apiClient(originalRequest)
+                }
+            } catch (refreshError) {
+                return Promise.reject(refreshError)
+            }
+        }
+
         return Promise.reject(error)
     }
 )

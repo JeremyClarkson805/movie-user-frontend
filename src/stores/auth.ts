@@ -17,6 +17,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userInfo = ref<UserInfo | null>(null)
   const token = ref<string | null>(null)
   const error = ref<string | null>(null)
+  const isLoading = ref(false)
 
   // Initialize from localStorage
   const initializeFromStorage = () => {
@@ -35,7 +36,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (credentials: { email: string; password: string }) => {
     try {
+      isLoading.value = true
       error.value = null
+
       const result = await apiService.auth.login(credentials)
 
       // Store token and user info
@@ -55,30 +58,39 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('guestToken')
       guestStore.$reset()
 
+      // Add a delay before navigation
+      await new Promise(resolve => setTimeout(resolve, 1000))
       router.push('/')
       return true
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
       console.error('Login error:', err)
       return false
+    } finally {
+      isLoading.value = false
     }
   }
 
-  const logout = () => {
-    // Clear auth state
-    token.value = null
-    userInfo.value = null
-    isAuthenticated.value = false
-    error.value = null
+  const logout = async () => {
+    try {
+      // Clear auth state
+      token.value = null
+      userInfo.value = null
+      isAuthenticated.value = false
+      error.value = null
 
-    // Clear localStorage
-    localStorage.removeItem('userToken')
-    localStorage.removeItem('userInfo')
+      // Clear localStorage
+      localStorage.removeItem('userToken')
+      localStorage.removeItem('userInfo')
 
-    // Reinitialize guest token
-    guestStore.initializeGuest()
+      // Navigate to home page first
+      router.push('/')
 
-    router.push('/login')
+      // Then reinitialize guest token
+      await guestStore.initializeGuest(true)
+    } catch (err) {
+      console.error('Logout error:', err)
+    }
   }
 
   return {
@@ -86,6 +98,7 @@ export const useAuthStore = defineStore('auth', () => {
     userInfo,
     token,
     error,
+    isLoading,
     login,
     logout
   }

@@ -79,16 +79,13 @@ const fetchMovies = async () => {
       page: page.value.toString(),
       pageSize: pageSize.value.toString()
     })
-    
-    const response = await axios.get(`/api/movie/list?${params}`,
-        {
-          headers: {
-            ...getAuthHeader()
-          }
-        }
-    )
-    console.log('API Response:', response.data)
-    
+
+    const response = await axios.get(`/api/movie/list?${params}`, {
+      headers: {
+        ...getAuthHeader()
+      }
+    })
+
     if (response.data.code === 200) {
       const responseData = response.data.data as MovieResponse
       movies.value = responseData.list
@@ -104,6 +101,10 @@ const fetchMovies = async () => {
     }
   } catch (error) {
     console.error('请求出错:', error)
+    // 如果是 401 错误,需要重新获取游客 token 并刷新页面
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      await fetchMovies()
+    }
   } finally {
     loading.value = false
   }

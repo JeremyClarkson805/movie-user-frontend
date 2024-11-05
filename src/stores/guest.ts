@@ -8,15 +8,16 @@ export const useGuestStore = defineStore('guest', () => {
     const isLoading = ref(false)
     const error = ref<string | null>(null)
 
-    const initializeGuest = async () => {
-        // Don't initialize if we already have a token
-        const storedToken = localStorage.getItem('guestToken')
-        if (storedToken) {
-            guestToken.value = storedToken
-            return
-        }
-
+    const initializeGuest = async (forceRefresh = false) => {
         try {
+            const storedToken = localStorage.getItem('guestToken')
+
+            // Return stored token if it exists and we're not forcing a refresh
+            if (!forceRefresh && storedToken) {
+                guestToken.value = storedToken
+                return
+            }
+
             isLoading.value = true
             error.value = null
 
@@ -41,6 +42,12 @@ export const useGuestStore = defineStore('guest', () => {
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Failed to initialize guest'
             console.error('Guest initialization error:', err)
+
+            // Clear invalid token if any
+            localStorage.removeItem('guestToken')
+            guestToken.value = null
+
+            throw err // Re-throw to handle in the interceptor
         } finally {
             isLoading.value = false
         }
@@ -67,6 +74,7 @@ export const useGuestStore = defineStore('guest', () => {
             guestToken.value = null
             isLoading.value = false
             error.value = null
+            localStorage.removeItem('guestToken')
         }
     }
 })
