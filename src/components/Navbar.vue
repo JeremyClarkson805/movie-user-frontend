@@ -75,7 +75,7 @@ onUnmounted(() => {
                 v-model="searchQuery"
                 @keyup.enter="handleSearch"
                 type="text"
-                placeholder="Search movies..."
+                placeholder="搜索关键词..."
                 :class="[
                 'px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'

@@ -9,6 +9,33 @@ const apiClient: AxiosInstance = axios.create({
     headers: API_CONFIG.headers
 })
 
+// Flag to prevent infinite retry loops
+let isRefreshing = false
+let failedQueue: Array<{
+    resolve: (value?: unknown) => void
+    reject: (reason?: any) => void
+    config: AxiosRequestConfig
+}> = []
+
+const processQueue = (error: Error | null, token: string | null = null) => {
+    failedQueue.forEach(promise => {
+        if (error) {
+            promise.reject(error)
+        } else if (token) {
+            promise.config.headers.Authorization = token
+            promise.resolve(apiClient(promise.config))
+        }
+    })
+    failedQueue = []
+}
+
+// Clear guest token and reset refresh state
+const clearGuestToken = () => {
+    localStorage.removeItem('guestToken')
+    isRefreshing = false
+    failedQueue = []
+}
+
 // Request interceptor
 apiClient.interceptors.request.use(
     (config) => {
@@ -39,10 +66,22 @@ apiClient.interceptors.response.use(
 
         // Check if error is 401 and there's no userToken (guest mode)
         if (error.response?.status === 401 && !localStorage.getItem('userToken') && originalRequest) {
-            // Initialize guest store
-            const guestStore = useGuestStore()
+            // Clear the invalid guest token first
+            clearGuestToken()
+
+            if (isRefreshing) {
+                // If token refresh is in progress, add request to queue
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject, config: originalRequest })
+                })
+            }
+
+            isRefreshing = true
 
             try {
+                // Initialize guest store
+                const guestStore = useGuestStore()
+
                 // Force refresh guest token
                 await guestStore.initializeGuest(true)
 
@@ -51,11 +90,19 @@ apiClient.interceptors.response.use(
                 if (newToken) {
                     // Update Authorization header
                     originalRequest.headers.Authorization = newToken
-                    // Retry the original request with the new token
+
+                    // Process queued requests
+                    processQueue(null, newToken)
+
+                    // Retry original request
                     return apiClient(originalRequest)
                 }
             } catch (refreshError) {
+                // Process queued requests with error
+                processQueue(refreshError as Error)
                 return Promise.reject(refreshError)
+            } finally {
+                isRefreshing = false
             }
         }
 

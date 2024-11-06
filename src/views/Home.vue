@@ -20,8 +20,8 @@ interface MovieResponse {
   pageSize: number
 }
 
-const route = useRoute() 
-const router = useRouter() 
+const route = useRoute()
+const router = useRouter()
 const page = ref(parseInt(route.query.page as string) || 1)
 const pageSize = ref(20)
 const movies = ref<Movie[]>([])
@@ -46,17 +46,17 @@ const paginationArray = computed(() => {
   const range = []
   const rangeWithDots = []
   let l: number
-  
+
   range.push(1)
-  
+
   for (let i = page.value - delta; i <= page.value + delta; i++) {
     if (i < totalPages.value && i > 1) {
       range.push(i)
     }
   }
-  
+
   range.push(totalPages.value)
-  
+
   for (let i of range) {
     if (l) {
       if (i - l === 2) {
@@ -68,7 +68,7 @@ const paginationArray = computed(() => {
     rangeWithDots.push(i)
     l = i
   }
-  
+
   return rangeWithDots
 })
 
@@ -80,11 +80,14 @@ const fetchMovies = async () => {
       pageSize: pageSize.value.toString()
     })
 
-    const response = await axios.get(`/api/movie/list?${params}`, {
-      headers: {
-        ...getAuthHeader()
-      }
-    })
+    const response = await axios.get(`/api/movie/list?${params}`,
+        {
+          headers: {
+            ...getAuthHeader()
+          }
+        }
+    )
+    console.log('API Response:', response.data)
 
     if (response.data.code === 200) {
       const responseData = response.data.data as MovieResponse
@@ -101,10 +104,6 @@ const fetchMovies = async () => {
     }
   } catch (error) {
     console.error('请求出错:', error)
-    // 如果是 401 错误,需要重新获取游客 token 并刷新页面
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      await fetchMovies()
-    }
   } finally {
     loading.value = false
   }
@@ -158,28 +157,28 @@ onMounted(() => {
     <!-- Movie Grid -->
     <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
       <MovieCard
-        v-for="movie in movies"
-        :key="movie.movieId"
-        :movie="movie"
+          v-for="movie in movies"
+          :key="movie.movieId"
+          :movie="movie"
       />
     </div>
 
     <!-- Pagination -->
     <div class="mt-8 flex flex-wrap justify-center items-center gap-2 pb-8">
       <button
-        @click="handlePageChange(1)"
-        :disabled="page === 1"
-        class="px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
-        :class="page === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
+          @click="handlePageChange(1)"
+          :disabled="page === 1"
+          class="px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+          :class="page === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
       >
         首页
       </button>
 
       <button
-        @click="handlePageChange(page - 1)"
-        :disabled="page === 1"
-        class="px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
-        :class="page === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
+          @click="handlePageChange(page - 1)"
+          :disabled="page === 1"
+          class="px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+          :class="page === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
       >
         上一页
       </button>
@@ -187,10 +186,10 @@ onMounted(() => {
       <div class="flex flex-wrap gap-1">
         <template v-for="(p, index) in paginationArray" :key="index">
           <button
-            v-if="p !== '...'"
-            @click="handlePageChange(p)"
-            class="px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
-            :class="page === p ? 'bg-blue-500 text-white' : 'text-gray-700 hover:bg-gray-100'"
+              v-if="p !== '...'"
+              @click="handlePageChange(p)"
+              class="px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+              :class="page === p ? 'bg-blue-500 text-white' : 'text-gray-700 hover:bg-gray-100'"
           >
             {{ p }}
           </button>
@@ -199,19 +198,19 @@ onMounted(() => {
       </div>
 
       <button
-        @click="handlePageChange(page + 1)"
-        :disabled="page === totalPages"
-        class="px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
-        :class="page === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
+          @click="handlePageChange(page + 1)"
+          :disabled="page === totalPages"
+          class="px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+          :class="page === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
       >
         下一页
       </button>
 
       <button
-        @click="handlePageChange(totalPages)"
-        :disabled="page === totalPages"
-        class="px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
-        :class="page === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
+          @click="handlePageChange(totalPages)"
+          :disabled="page === totalPages"
+          class="px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+          :class="page === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
       >
         末页
       </button>
@@ -220,12 +219,12 @@ onMounted(() => {
       <div class="flex items-center gap-2 ml-4">
         <span class="text-sm text-gray-500">跳转至</span>
         <input
-          v-model="jumpPage"
-          type="number"
-          min="1"
-          :max="totalPages"
-          class="w-16 px-2 py-1 text-sm border rounded-md focus:outline-none focus:border-blue-500"
-          @keyup.enter="handleJumpPage"
+            v-model="jumpPage"
+            type="number"
+            min="1"
+            :max="totalPages"
+            class="w-16 px-2 py-1 text-sm border rounded-md focus:outline-none focus:border-blue-500"
+            @keyup.enter="handleJumpPage"
         />
         <span class="text-sm text-gray-500">页</span>
       </div>
