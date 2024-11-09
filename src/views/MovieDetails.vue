@@ -18,23 +18,28 @@ interface Actor {
 }
 
 interface DownloadLink {
-  id: string
-  type: string
-  name: string
-  data: string
-  passwd: string | null
+  id: number
+  movieId: number
+  linkName: string
+  downloadUrl: string
+  fileType: string
+  createdAt: string | null
+  updatedAt: string | null
 }
 
 interface MovieDetail {
   movieId: number
   title: string
   releaseYear: number
+  duration: string
   rating: number
   director: string
   writers: Writer[]
   actors: Actor[]
+  categories: string[]
   posterUrl: string
   country: string
+  createTime: string
   intro: string
 }
 
@@ -42,17 +47,20 @@ const movie = ref<MovieDetail>({
   movieId: 0,
   title: '',
   releaseYear: 0,
+  duration: '',
   rating: 0,
   director: '',
   writers: [],
   actors: [],
+  categories: [],
   posterUrl: '',
   country: '',
+  createTime: '',
   intro: ''
 })
 
 const downloadLinks = ref<DownloadLink[]>([])
-const copyStatus = ref<{ [key: string]: boolean }>({})
+const copyStatus = ref<{ [key: number]: boolean }>({})
 const error = ref('')
 
 const fetchMovieDetail = async (id: string | string[]) => {
@@ -92,7 +100,7 @@ const fetchDownloadLinks = async (movieId: string | string[]) => {
 
 const copyToClipboard = async (link: DownloadLink) => {
   try {
-    await navigator.clipboard.writeText(link.data)
+    await navigator.clipboard.writeText(link.downloadUrl)
     copyStatus.value[link.id] = true
     setTimeout(() => {
       copyStatus.value[link.id] = false
@@ -145,6 +153,20 @@ onMounted(() => {
           </div>
 
           <div>
+            <h2 class="text-xl font-semibold mb-2">分类</h2>
+            <div class="flex flex-wrap gap-2">
+              <span v-for="category in movie.categories"
+                    :key="category"
+                    :class="[
+                      'px-3 py-1 rounded-full text-sm font-medium',
+                      themeStore.isDark ? 'bg-gray-700' : 'bg-gray-200'
+                    ]">
+                {{ category }}
+              </span>
+            </div>
+          </div>
+
+          <div>
             <h2 class="text-xl font-semibold mb-2">简介</h2>
             <p class="font-medium" :class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'">
               {{ movie.intro }}
@@ -154,7 +176,7 @@ onMounted(() => {
           <div>
             <h2 class="text-xl font-semibold mb-2">相关信息</h2>
             <p class="font-medium" :class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'">
-              {{ movie.releaseYear }}  |  {{ movie.country }}  |  评分: {{ movie.rating }}
+              {{ movie.releaseYear }} | {{ movie.duration }}分钟 | {{ movie.country }} | 评分: {{ movie.rating }}
             </p>
           </div>
 
@@ -167,13 +189,13 @@ onMounted(() => {
                   :key="link.id"
                   @click="copyToClipboard(link)"
                   :class="[
-                  'flex items-center justify-between p-4 rounded-lg transition-colors relative overflow-hidden',
-                  themeStore.isDark
-                    ? 'bg-gray-800 hover:bg-gray-700'
-                    : 'bg-gray-100 hover:bg-gray-200'
-                ]"
+                    'flex items-center justify-between p-4 rounded-lg transition-colors relative overflow-hidden',
+                    themeStore.isDark
+                      ? 'bg-gray-800 hover:bg-gray-700'
+                      : 'bg-gray-100 hover:bg-gray-200'
+                  ]"
               >
-                <span class="font-semibold truncate pr-4">{{ link.name }}</span>
+                <span class="font-semibold truncate pr-4">{{ link.linkName }}</span>
                 <span
                     class="absolute inset-0 flex items-center justify-center bg-green-500 text-white transition-transform duration-200"
                     :class="copyStatus[link.id] ? 'translate-y-0' : 'translate-y-full'"

@@ -6,7 +6,17 @@ import { useAuthStore } from '../stores/auth'
 
 const emit = defineEmits(['show-login', 'show-register'])
 
-const categories = ['Action', 'Drama', 'Comedy', 'Sci-Fi', 'Horror']
+const categories = [
+  { name: '首页', route: '/' },
+  { name: '动作', route: '/category/action' },
+  { name: '剧情', route: '/category/drama' },
+  { name: '喜剧', route: '/category/comedy' },
+  { name: '科幻', route: '/category/sci-fi' },
+  { name: '恐怖', route: '/category/horror' },
+  { name: '爱情', route: '/category/romance' },
+  { name: '动画', route: '/category/animation' }
+]
+
 const searchQuery = ref('')
 const showUserMenu = ref(false)
 const router = useRouter()
@@ -49,13 +59,15 @@ onUnmounted(() => {
           <router-link to="/" class="text-xl font-bold">MovieHub</router-link>
           <div class="hidden md:flex space-x-4">
             <router-link v-for="category in categories"
-                         :key="category"
-                         :to="'/category/' + category.toLowerCase()"
+                         :key="category.name"
+                         :to="category.route"
                          :class="[
-                'transition-colors',
-                themeStore.isDark ? 'hover:text-gray-300' : 'hover:text-gray-600'
-              ]">
-              {{ category }}
+                          'transition-colors px-3 py-1 rounded-md font-medium text-base',
+                          route.path === category.route
+                            ? (themeStore.isDark ? 'bg-gray-700 text-white font-semibold' : 'bg-gray-200 text-gray-900 font-semibold')
+                            : (themeStore.isDark ? 'hover:text-gray-300' : 'hover:text-gray-600')
+                        ]">
+              {{ category.name }}
             </router-link>
           </div>
         </div>
@@ -75,7 +87,7 @@ onUnmounted(() => {
                 v-model="searchQuery"
                 @keyup.enter="handleSearch"
                 type="text"
-                placeholder="搜索关键词..."
+                placeholder="Search movies..."
                 :class="[
                 'px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'

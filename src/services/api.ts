@@ -29,8 +29,9 @@ const processQueue = (error: Error | null, token: string | null = null) => {
     failedQueue = []
 }
 
-// Clear guest token and reset refresh state
-const clearGuestToken = () => {
+// Clear tokens and reset refresh state
+const clearTokens = () => {
+    localStorage.removeItem('userToken')
     localStorage.removeItem('guestToken')
     isRefreshing = false
     failedQueue = []
@@ -64,10 +65,9 @@ apiClient.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config
 
-        // Check if error is 401 and there's no userToken (guest mode)
-        if (error.response?.status === 401 && !localStorage.getItem('userToken') && originalRequest) {
-            // Clear the invalid guest token first
-            clearGuestToken()
+        if (error.response?.status === 401 && originalRequest) {
+            // Clear both tokens when receiving 401
+            clearTokens()
 
             if (isRefreshing) {
                 // If token refresh is in progress, add request to queue
