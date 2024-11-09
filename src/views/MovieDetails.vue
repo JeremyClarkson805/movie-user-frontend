@@ -23,6 +23,7 @@ interface DownloadLink {
   linkName: string
   downloadUrl: string
   fileType: string
+  size: number
   createdAt: string | null
   updatedAt: string | null
 }
@@ -189,13 +190,14 @@ onMounted(() => {
                   :key="link.id"
                   @click="copyToClipboard(link)"
                   :class="[
-                    'flex items-center justify-between p-4 rounded-lg transition-colors relative overflow-hidden',
+                    'flex items-center justify-between p-4 rounded-lg transition-colors relative overflow-hidden group',
                     themeStore.isDark
                       ? 'bg-gray-800 hover:bg-gray-700'
                       : 'bg-gray-100 hover:bg-gray-200'
                   ]"
               >
-                <span class="font-semibold truncate pr-4">{{ link.linkName }}</span>
+                <span class="font-medium text-base truncate pr-4">{{ link.linkName }}</span>
+                <span class="font-medium text-sm opacity-75">{{ link.size.toFixed(1) }}GB</span>
                 <span
                     class="absolute inset-0 flex items-center justify-center bg-green-500 text-white transition-transform duration-200"
                     :class="copyStatus[link.id] ? 'translate-y-0' : 'translate-y-full'"
