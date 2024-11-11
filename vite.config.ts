@@ -17,7 +17,7 @@ export default defineConfig({
       // 精确匹配 /api 开头的请求
       '/api': {
         // 目标服务器地址
-        target: 'http://localhost:9090',
+        target: 'http://localhost:8080',
 
         // 是否允许跨域
         changeOrigin: true,

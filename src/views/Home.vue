@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import MovieCard from '../components/MovieCard.vue'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -27,11 +27,6 @@ const pageSize = ref(20)
 const movies = ref<Movie[]>([])
 const totalPages = ref(0)
 const loading = ref(false)
-
-// const getAuthHeader = () => {
-//   const token = localStorage.getItem('authorization')
-//   return token ? { 'Authorization': token } : {}
-// }
 
 const getAuthHeader = () => {
   const userToken = localStorage.getItem('userToken')
@@ -80,6 +75,11 @@ const fetchMovies = async () => {
       pageSize: pageSize.value.toString()
     })
 
+    // 如果有分类参数，添加到请求中
+    if (route.params.category) {
+      params.append('categoryNameEn', route.params.category as string)
+    }
+
     const response = await axios.get(`/api/movie/list?${params}`,
         {
           headers: {
@@ -87,14 +87,13 @@ const fetchMovies = async () => {
           }
         }
     )
-    console.log('API Response:', response.data)
 
     if (response.data.code === 200) {
       const responseData = response.data.data as MovieResponse
       movies.value = responseData.list
       totalPages.value = responseData.pages
       pageSize.value = responseData.pageSize
-      // 如果当前页超出总页数，自动跳转到最后一页
+
       if (page.value > totalPages.value) {
         page.value = totalPages.value
         await fetchMovies()
@@ -112,7 +111,6 @@ const fetchMovies = async () => {
 const handlePageChange = (newPage: number) => {
   if (newPage >= 1 && newPage <= totalPages.value) {
     page.value = newPage
-    // 更新 URL 查询参数
     router.push({
       query: { ...route.query, page: newPage.toString() }
     })
@@ -130,17 +128,20 @@ const handleJumpPage = () => {
   }
 }
 
-// 监听路由变化，确保从其他页面返回时能正确加载当前页
+// 监听路由参数变化，重新获取数据
+watch(
+    () => route.params.category,
+    () => {
+      page.value = 1
+      fetchMovies()
+    }
+)
+
 onMounted(() => {
-  // 如果 URL 中有页码参数，使用该页码
   const urlPage = parseInt(route.query.page as string)
   if (urlPage && urlPage !== page.value) {
     page.value = urlPage
   }
-  fetchMovies()
-})
-
-onMounted(() => {
   fetchMovies()
 })
 </script>

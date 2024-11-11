@@ -1,18 +1,3 @@
-<template>
-  <div :class="[
-    'min-h-screen transition-colors duration-200',
-    themeStore.isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
-  ]">
-    <Navbar @show-login="handleShowLogin" @show-register="handleShowRegister" />
-    <main class="container mx-auto px-4 py-8">
-      <router-view></router-view>
-    </main>
-
-    <Login v-if="showLogin" @close="handleCloseLogin" @show-register="handleShowRegister" />
-    <Register v-if="showRegister" @close="handleCloseRegister" @show-login="handleShowLogin" />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import Navbar from './components/Navbar.vue'
@@ -59,9 +44,28 @@ const handleCloseRegister = () => {
 }
 </script>
 
+<template>
+  <div :class="[
+    // 'min-h-screen transition-colors duration-200 scale-90 origin-top',
+    'min-h-screen transition-colors duration-200',
+    themeStore.isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
+  ]">
+    <Navbar @show-login="handleShowLogin" @show-register="handleShowRegister" />
+    <main class="container mx-auto px-4 py-8">
+      <router-view></router-view>
+    </main>
+
+    <Login v-if="showLogin" @close="handleCloseLogin" @show-register="handleShowRegister" />
+    <Register v-if="showRegister" @close="handleCloseRegister" @show-login="handleShowLogin" />
+  </div>
+</template>
+
 <style>
 #app {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+/*html, body {
+  min-height: 111.11vh; !* 100/0.9 ≈ 111.11 *!
+}*/
 </style>
