@@ -138,19 +138,19 @@ onMounted(() => {
           </div>
 
           <div>
+            <h2 class="text-xl font-semibold mb-2">编剧</h2>
+            <p v-for="writer in movie.writers" :key="writer.id" class="pl-2 font-medium">
+              {{ writer.name }}
+            </p>
+          </div>
+
+          <div>
             <h2 class="text-xl font-semibold mb-3">演员</h2>
             <div class="space-y-2">
               <p v-for="actor in movie.actors" :key="actor.id" class="pl-2 font-medium">
                 {{ actor.name }}
               </p>
             </div>
-          </div>
-
-          <div>
-            <h2 class="text-xl font-semibold mb-2">编剧</h2>
-            <p v-for="writer in movie.writers" :key="writer.id" class="pl-2 font-medium">
-              {{ writer.name }}
-            </p>
           </div>
 
           <div>
