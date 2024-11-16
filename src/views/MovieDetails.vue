@@ -101,14 +101,31 @@ const fetchDownloadLinks = async (movieId: string | string[]) => {
 
 const copyToClipboard = async (link: DownloadLink) => {
   try {
-    await navigator.clipboard.writeText(link.downloadUrl)
-    copyStatus.value[link.id] = true
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(link.downloadUrl);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = link.downloadUrl;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      if (!successful) {
+        throw new Error('复制命令执行失败');
+      }
+    }
+
+    copyStatus.value[link.id] = true;
     setTimeout(() => {
-      copyStatus.value[link.id] = false
-    }, 2000)
+      copyStatus.value[link.id] = false;
+    }, 2000);
   } catch (err) {
-    console.error('Failed to copy:', err)
-    error.value = '复制失败'
+    console.error('Failed to copy:', err);
+    error.value = '复制失败，请尝试手动选择并复制链接';
   }
 }
 
