@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
+import SignInModal from '../components/SignInModal.vue'
 
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
@@ -24,6 +25,9 @@ const error = ref('')
 const showEditModal = ref(false)
 const isCheckinLoading = ref(false)
 const checkinSuccess = ref(false)
+const showSignInModal = ref(false)
+const signInModalMessage = ref('')
+const signInModalType = ref<'success' | 'warning' | 'error'>('success')
 
 const editForm = ref({
   nickName: '',
@@ -138,7 +142,6 @@ const fetchUserInfo = async () => {
 const handleSignIn = async () => {
   try {
     isCheckinLoading.value = true
-    error.value = ''
     const token = localStorage.getItem('userToken')
 
     const response = await fetch('/api/user/signIn', {
@@ -151,21 +154,24 @@ const handleSignIn = async () => {
     const data = await response.json()
     
     if (data.code === 200) {
-      checkinSuccess.value = true
-      // 直接用返回的数据更新用户信息
+      signInModalType.value = 'success'
+      signInModalMessage.value = '签到成功！获得积分奖励'
+      showSignInModal.value = true
       userInfo.value = data.data
-      setTimeout(() => {
-        checkinSuccess.value = false
-      }, 3000)
     } else if (data.code === 403) {
-      // 直接显示接口返回的消息
-      error.value = data.message
+      signInModalType.value = 'warning'
+      signInModalMessage.value = data.message
+      showSignInModal.value = true
     } else {
-      throw new Error(data.message || '签到失败')
+      signInModalType.value = 'error'
+      signInModalMessage.value = data.message || '签到失败，请稍后重试'
+      showSignInModal.value = true
     }
   } catch (err) {
     console.error('签到失败:', err)
-    error.value = '签到失败，请稍后重试'
+    signInModalType.value = 'error'
+    signInModalMessage.value = '签到失败，请检查网络连接'
+    showSignInModal.value = true
   } finally {
     isCheckinLoading.value = false
   }
@@ -397,7 +403,7 @@ onMounted(() => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium mb-1">性别</label>
+              <label class="block text-sm font-medium mb-1">别</label>
               <select
                   v-model="editForm.gender"
                   :class="[
@@ -443,5 +449,13 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Sign In Modal -->
+    <SignInModal
+      :show="showSignInModal"
+      :type="signInModalType"
+      :message="signInModalMessage"
+      @close="showSignInModal = false"
+    />
   </div>
 </template>
