@@ -68,9 +68,9 @@ const error = ref('')
 const getFileTypeLabel = (type: string) => {
   switch (type) {
     case 'magnet':
-      return { label: '磁力链接', color: 'bg-emerald-700' }
+      return { label: '磁力链接', color: 'bg-emerald-600' }
     case 'aliyun':
-      return { label: '阿里云盘', color: 'bg-blue-400' }
+      return { label: '阿里云盘', color: 'bg-blue-500' }
     default:
       return { label: '其他', color: 'bg-gray-500' }
   }
