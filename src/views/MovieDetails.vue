@@ -24,6 +24,7 @@ interface DownloadLink {
   downloadUrl: string
   fileType: string
   size: number
+  passwd: string | null
   createdAt: string | null
   updatedAt: string | null
 }
@@ -63,6 +64,17 @@ const movie = ref<MovieDetail>({
 const downloadLinks = ref<DownloadLink[]>([])
 const copyStatus = ref<{ [key: number]: boolean }>({})
 const error = ref('')
+
+const getFileTypeLabel = (type: string) => {
+  switch (type) {
+    case 'magnet':
+      return { label: '磁力链接', color: 'bg-emerald-700' }
+    case 'aliyun':
+      return { label: '阿里云盘', color: 'bg-blue-400' }
+    default:
+      return { label: '其他', color: 'bg-gray-500' }
+  }
+}
 
 const fetchMovieDetail = async (id: string | string[]) => {
   try {
@@ -202,28 +214,52 @@ onMounted(() => {
             <h2 class="text-xl font-semibold mb-4">下载链接</h2>
             <div v-if="error" class="text-red-500 mb-4">{{ error }}</div>
             <div class="grid gap-4">
-              <button
+              <div
                   v-for="link in downloadLinks"
                   :key="link.id"
-                  @click="copyToClipboard(link)"
-                  :class="[
-                    'flex items-center justify-between p-4 rounded-lg transition-colors relative overflow-hidden group',
-                    themeStore.isDark
-                      ? 'bg-gray-800 hover:bg-gray-700'
-                      : 'bg-gray-100 hover:bg-gray-200'
-                  ]"
+                  class="relative overflow-hidden rounded-lg"
               >
-                <span class="font-medium text-base truncate pr-4">{{ link.linkName }}</span>
-                <span class="font-medium text-sm opacity-75">{{ link.size.toFixed(1) }}GB</span>
-                <span
-                    class="absolute inset-0 flex items-center justify-center bg-green-500 text-white transition-transform duration-200"
-                    :class="copyStatus[link.id] ? 'translate-y-0' : 'translate-y-full'"
+                <button
+                    @click="copyToClipboard(link)"
+                    :class="[
+                      'w-full text-left',
+                      themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                    ]"
+                >
+                  <div class="flex items-center p-4 transition-colors">
+                    <!-- 文件类型标签 -->
+                    <span :class="[
+                      'px-2 py-1 rounded text-xs font-medium text-white mr-3',
+                      getFileTypeLabel(link.fileType).color
+                    ]">
+                      {{ getFileTypeLabel(link.fileType).label }}
+                    </span>
+
+                    <!-- 链接名称和大小 -->
+                    <div class="flex-1 flex items-center justify-between">
+                      <span class="font-medium text-base truncate pr-4">{{ link.linkName }}</span>
+                      <span class="font-medium text-sm opacity-75 whitespace-nowrap">
+                        {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+
+                <!-- 复制成功提示 -->
+                <div
+                    class="absolute inset-0 flex items-center justify-center bg-green-500 text-white transition-all duration-200"
+                    :class="[
+                      copyStatus[link.id]
+                        ? 'opacity-100 translate-y-0'
+                        : 'opacity-0 translate-y-full pointer-events-none'
+                    ]"
                 >
                   已复制到剪贴板！
-                </span>
-              </button>
+                </div>
+              </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
