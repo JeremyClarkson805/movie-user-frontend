@@ -198,7 +198,10 @@ onMounted(() => {
 
           <div>
             <h2 class="text-xl font-semibold mb-2">简介</h2>
-            <p class="font-medium" :class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'">
+            <p
+                class="font-medium whitespace-pre-wrap indent-8"
+                :class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'"
+            >
               {{ movie.intro }}
             </p>
           </div>
@@ -210,6 +213,7 @@ onMounted(() => {
             </p>
           </div>
 
+
           <div>
             <h2 class="text-xl font-semibold mb-4">下载链接</h2>
             <div v-if="error" class="text-red-500 mb-4">{{ error }}</div>
@@ -217,30 +221,35 @@ onMounted(() => {
               <div
                   v-for="link in downloadLinks"
                   :key="link.id"
-                  class="relative overflow-hidden rounded-lg"
+                  class="relative overflow-hidden rounded-lg border"
+                  :class="themeStore.isDark ?
+        'border-gray-700 bg-gray-800' :
+        'border-gray-200 bg-gray-100'"
               >
                 <button
                     @click="copyToClipboard(link)"
-                    :class="[
-                      'w-full text-left',
-                      themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                    ]"
+                    class="w-full text-left transition-colors"
+                    :class="themeStore.isDark ?
+          'hover:bg-gray-700' :
+          'hover:bg-gray-200'"
                 >
-                  <div class="flex items-center p-4 transition-colors">
+                  <div class="flex items-center p-4">
                     <!-- 文件类型标签 -->
-                    <span :class="[
-                      'px-2 py-1 rounded text-xs font-medium text-white mr-3',
-                      getFileTypeLabel(link.fileType).color
-                    ]">
-                      {{ getFileTypeLabel(link.fileType).label }}
-                    </span>
+                    <span
+                        :class="[
+              'px-2 py-1 rounded text-xs font-medium text-white mr-3',
+              getFileTypeLabel(link.fileType).color
+            ]"
+                    >
+            {{ getFileTypeLabel(link.fileType).label }}
+          </span>
 
                     <!-- 链接名称和大小 -->
                     <div class="flex-1 flex items-center justify-between">
                       <span class="font-medium text-base truncate pr-4">{{ link.linkName }}</span>
                       <span class="font-medium text-sm opacity-75 whitespace-nowrap">
-                        {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
-                      </span>
+              {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
+            </span>
                     </div>
                   </div>
                 </button>
@@ -249,16 +258,17 @@ onMounted(() => {
                 <div
                     class="absolute inset-0 flex items-center justify-center bg-green-500 text-white transition-all duration-200"
                     :class="[
-                      copyStatus[link.id]
-                        ? 'opacity-100 translate-y-0'
-                        : 'opacity-0 translate-y-full pointer-events-none'
-                    ]"
+          copyStatus[link.id]
+            ? 'opacity-100 translate-y-0'
+            : 'opacity-0 translate-y-full pointer-events-none'
+        ]"
                 >
                   已复制到剪贴板！
                 </div>
               </div>
             </div>
           </div>
+
 
         </div>
       </div>
