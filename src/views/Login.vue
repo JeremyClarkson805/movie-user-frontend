@@ -60,11 +60,11 @@ const handleForgotPassword = () => {
           </svg>
         </button>
 
-        <h1 class="text-2xl font-bold mb-6">Login</h1>
+        <h1 class="text-2xl font-bold mb-6">登录</h1>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium mb-1">Email</label>
+            <label class="block text-sm font-medium mb-1">邮箱</label>
             <input
                 v-model="email"
                 type="email"
@@ -77,7 +77,7 @@ const handleForgotPassword = () => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1">Password</label>
+            <label class="block text-sm font-medium mb-1">密码</label>
             <input
                 v-model="password"
                 type="password"
@@ -95,7 +95,7 @@ const handleForgotPassword = () => {
                 @click="handleForgotPassword"
                 class="text-sm text-blue-500 hover:underline"
             >
-              Forgot Password?
+              忘记密码了?
             </button>
           </div>
 
@@ -106,14 +106,14 @@ const handleForgotPassword = () => {
               :disabled="isLoading"
               class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {{ isLoading ? 'Logging in...' : 'Login' }}
+            {{ isLoading ? '登录中...' : '登录' }}
           </button>
         </form>
 
         <p class="mt-4 text-sm text-center">
-          Don't have an account?
+          还没有一个账户?
           <button @click="switchToRegister" class="text-blue-500 hover:underline">
-            Register here
+            点击这里注册
           </button>
         </p>
       </div>

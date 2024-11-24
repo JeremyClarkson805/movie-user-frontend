@@ -147,13 +147,13 @@ onUnmounted(() => {
                     :class="[
                     'block w-full text-left px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  ]">Register</button>
+                  ]">注册</button>
                 <button
                     @click="emit('show-login')"
                     :class="[
                     'block w-full text-left px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  ]">Login</button>
+                  ]">登录</button>
               </template>
 
               <!-- Authenticated User Menu -->
@@ -162,19 +162,19 @@ onUnmounted(() => {
                              :class="[
                     'block px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  ]">Profile</router-link>
+                  ]">个人档案</router-link>
                 <router-link to="/settings"
                              :class="[
                     'block px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  ]">Settings</router-link>
+                  ]">设置</router-link>
                 <button
                     @click="authStore.logout"
                     :class="[
                     'block w-full text-left px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">
-                  Logout
+                  退出登录
                 </button>
               </template>
             </div>

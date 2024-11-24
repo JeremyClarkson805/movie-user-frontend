@@ -143,17 +143,29 @@ export const apiService = {
     // Auth related APIs
     auth: {
         login: async (credentials: LoginCredentials) => {
-            const encoder = new TextEncoder()
-            const data = encoder.encode(credentials.password)
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-            const hashArray = Array.from(new Uint8Array(hashBuffer))
-            const hashedPassword = hashArray.map(byte =>
-                byte.toString(16).padStart(2, '0')).join('').toUpperCase()
+            try {
+                // 检查是否支持 crypto.subtle
+                if (!window.crypto || !window.crypto.subtle) {
+                    throw new Error('您的浏览器不支持加密API，请使用更现代的浏览器。')
+                }
 
-            return apiClient.post('/api/user/login', {
-                email: credentials.email,
-                passwd: hashedPassword
-            })
+                const encoder = new TextEncoder()
+                const data = encoder.encode(credentials.password)
+                const hashBuffer = await window.crypto.subtle.digest('SHA-256', data)
+                const hashArray = Array.from(new Uint8Array(hashBuffer))
+                const hashedPassword = hashArray.map(byte =>
+                    byte.toString(16).padStart(2, '0')).join('').toUpperCase()
+
+                return apiClient.post('/api/user/login', {
+                    email: credentials.email,
+                    passwd: hashedPassword
+                })
+            } catch (err) {
+                if (err instanceof Error) {
+                    throw new Error(`登录失败: ${err.message}`)
+                }
+                throw new Error('登录过程中发生未知错误')
+            }
         },
 
         register: async (data: RegisterData) => {
