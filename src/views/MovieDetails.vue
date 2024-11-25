@@ -1,10 +1,11 @@
 <script lang="ts" setup>
-import {ref, onMounted} from 'vue'
-import {useRoute} from 'vue-router'
-import {useThemeStore} from '../stores/theme'
-import {apiService} from '../services/api'
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useThemeStore } from '../stores/theme'
+import { apiService } from '../services/api'
 
 const route = useRoute()
+const router = useRouter()
 const themeStore = useThemeStore()
 
 interface Writer {
@@ -65,14 +66,35 @@ const downloadLinks = ref<DownloadLink[]>([])
 const copyStatus = ref<{ [key: number]: boolean }>({})
 const error = ref('')
 
+// 分类名称映射
+const categoryMapping: { [key: string]: string } = {
+  '动作': 'Action',
+  '犯罪': 'Crime',
+  '喜剧': 'Comedy',
+  '科幻': 'Sci-Fi',
+  '恐怖': 'Horror',
+  '爱情': 'Romantic',
+  '动画': 'Cartoon'
+}
+
+const handleCategoryClick = (category: string) => {
+  // 获取英文分类名
+  const categoryNameEn = categoryMapping[category] || category
+  // 获取完整的URL
+  const baseUrl = window.location.origin
+  const categoryUrl = `${baseUrl}/category/${categoryNameEn}`
+  // 在新窗口打开
+  window.open(categoryUrl, '_blank')
+}
+
 const getFileTypeLabel = (type: string) => {
   switch (type) {
     case 'magnet':
-      return {label: '磁力链接', color: 'bg-emerald-600'}
+      return { label: '磁力链接', color: 'bg-emerald-600' }
     case 'aliyun':
-      return {label: '阿里云盘', color: 'bg-blue-500'}
+      return { label: '阿里云盘', color: 'bg-blue-500' }
     default:
-      return {label: '其他', color: 'bg-gray-500'}
+      return { label: '其他', color: 'bg-gray-500' }
   }
 }
 
@@ -114,30 +136,30 @@ const fetchDownloadLinks = async (movieId: string | string[]) => {
 const copyToClipboard = async (link: DownloadLink) => {
   try {
     if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(link.downloadUrl);
+      await navigator.clipboard.writeText(link.downloadUrl)
     } else {
-      const textarea = document.createElement('textarea');
-      textarea.value = link.downloadUrl;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
+      const textarea = document.createElement('textarea')
+      textarea.value = link.downloadUrl
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
 
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textarea);
+      const successful = document.execCommand('copy')
+      document.body.removeChild(textarea)
 
       if (!successful) {
-        throw new Error('复制命令执行失败');
+        throw new Error('复制命令执行失败')
       }
     }
 
-    copyStatus.value[link.id] = true;
+    copyStatus.value[link.id] = true
     setTimeout(() => {
-      copyStatus.value[link.id] = false;
-    }, 2000);
+      copyStatus.value[link.id] = false
+    }, 2000)
   } catch (err) {
-    console.error('Failed to copy:', err);
-    error.value = '复制失败，请尝试手动选择并复制链接';
+    console.error('Failed to copy:', err)
+    error.value = '复制失败，请尝试手动选择并复制链接'
   }
 }
 
@@ -185,14 +207,19 @@ onMounted(() => {
           <div>
             <h2 class="text-xl font-semibold mb-2">分类</h2>
             <div class="flex flex-wrap gap-2">
-              <span v-for="category in movie.categories"
-                    :key="category"
-                    :class="[
-                      'px-3 py-1 rounded-full text-sm font-medium',
-                      themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
-                    ]">
+              <button
+                  v-for="category in movie.categories"
+                  :key="category"
+                  @click="handleCategoryClick(category)"
+                  :class="[
+                  'px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200',
+                  themeStore.isDark
+                    ? 'bg-gray-700 hover:bg-gray-600 hover:text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 hover:text-gray-900'
+                ]"
+              >
                 {{ category }}
-              </span>
+              </button>
             </div>
           </div>
 
@@ -213,7 +240,6 @@ onMounted(() => {
             </p>
           </div>
 
-
           <div>
             <h2 class="text-xl font-semibold mb-4">下载链接</h2>
             <div v-if="error" class="text-red-500 mb-4">{{ error }}</div>
@@ -222,45 +248,42 @@ onMounted(() => {
                   v-for="link in downloadLinks"
                   :key="link.id"
                   :class="themeStore.isDark ?
-        'border-gray-700 bg-gray-800' :
-        'border-gray-200 bg-gray-100'"
+                    'border-gray-700 bg-gray-800' :
+                    'border-gray-200 bg-gray-100'"
                   class="relative overflow-hidden rounded-lg border"
               >
                 <button
                     :class="themeStore.isDark ?
-          'hover:bg-gray-700' :
-          'hover:bg-gray-200'"
+                      'hover:bg-gray-700' :
+                      'hover:bg-gray-200'"
                     class="w-full text-left transition-colors"
                     @click="copyToClipboard(link)"
                 >
                   <div class="flex items-center p-4">
-                    <!-- 文件类型标签 -->
                     <span
                         :class="[
-              'px-2 py-1 rounded text-xs font-medium text-white mr-3',
-              getFileTypeLabel(link.fileType).color
-            ]"
+                          'px-2 py-1 rounded text-xs font-medium text-white mr-3',
+                          getFileTypeLabel(link.fileType).color
+                        ]"
                     >
-            {{ getFileTypeLabel(link.fileType).label }}
-          </span>
+                      {{ getFileTypeLabel(link.fileType).label }}
+                    </span>
 
-                    <!-- 链接名称和大小 -->
                     <div class="flex-1 flex items-center justify-between">
                       <span class="font-medium text-base truncate pr-4">{{ link.linkName }}</span>
                       <span class="font-medium text-sm opacity-75 whitespace-nowrap">
-              {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
-            </span>
+                        {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
+                      </span>
                     </div>
                   </div>
                 </button>
 
-                <!-- 复制成功提示 -->
                 <div
                     :class="[
-          copyStatus[link.id]
-            ? 'opacity-100 translate-y-0'
-            : 'opacity-0 translate-y-full pointer-events-none'
-        ]"
+                      copyStatus[link.id]
+                        ? 'opacity-100 translate-y-0'
+                        : 'opacity-0 translate-y-full pointer-events-none'
+                    ]"
                     class="absolute inset-0 flex items-center justify-center bg-green-500 text-white transition-all duration-200"
                 >
                   已复制到剪贴板！
@@ -268,8 +291,6 @@ onMounted(() => {
               </div>
             </div>
           </div>
-
-
         </div>
       </div>
     </div>
