@@ -154,6 +154,12 @@ onUnmounted(() => {
                     'block w-full text-left px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">登录</button>
+                <router-link
+                    to="/membership"
+                    :class="[
+                    'block w-full text-left px-4 py-2',
+                    themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                  ]">会员服务</router-link>
               </template>
 
               <!-- Authenticated User Menu -->
@@ -163,11 +169,11 @@ onUnmounted(() => {
                     'block px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">个人档案</router-link>
-                <router-link to="/settings"
+                <router-link to="/membership"
                              :class="[
                     'block px-4 py-2',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  ]">设置</router-link>
+                  ]">会员服务</router-link>
                 <button
                     @click="authStore.logout"
                     :class="[

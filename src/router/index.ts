@@ -3,6 +3,8 @@ import Home from '../views/Home.vue'
 import MovieDetails from '../views/MovieDetails.vue'
 import Profile from '../views/Profile.vue'
 import SearchResults from '../views/SearchResults.vue'
+import MembershipPlans from '../views/MembershipPlans.vue'
+import Subscribe from '../views/Subscribe.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -31,6 +33,16 @@ const router = createRouter({
       path: '/search',
       name: 'search',
       component: SearchResults
+    },
+    {
+      path: '/membership',
+      name: 'membership',
+      component: MembershipPlans
+    },
+    {
+      path: '/subscribe/:plan',
+      name: 'subscribe',
+      component: Subscribe
     }
   ]
 })
