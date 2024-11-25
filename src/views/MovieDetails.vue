@@ -1,8 +1,8 @@
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { useThemeStore } from '../stores/theme'
-import { apiService } from '../services/api'
+<script lang="ts" setup>
+import {ref, onMounted} from 'vue'
+import {useRoute} from 'vue-router'
+import {useThemeStore} from '../stores/theme'
+import {apiService} from '../services/api'
 
 const route = useRoute()
 const themeStore = useThemeStore()
@@ -68,11 +68,11 @@ const error = ref('')
 const getFileTypeLabel = (type: string) => {
   switch (type) {
     case 'magnet':
-      return { label: '磁力链接', color: 'bg-emerald-600' }
+      return {label: '磁力链接', color: 'bg-emerald-600'}
     case 'aliyun':
-      return { label: '阿里云盘', color: 'bg-blue-500' }
+      return {label: '阿里云盘', color: 'bg-blue-500'}
     default:
-      return { label: '其他', color: 'bg-gray-500' }
+      return {label: '其他', color: 'bg-gray-500'}
   }
 }
 
@@ -154,8 +154,8 @@ onMounted(() => {
   <div class="pt-20">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div class="md:col-span-1">
-        <img :src="movie.posterUrl" :alt="movie.title"
-             class="w-full rounded-lg shadow-xl" />
+        <img :alt="movie.title" :src="movie.posterUrl"
+             class="w-full rounded-lg shadow-xl"/>
       </div>
 
       <div class="md:col-span-2">
@@ -189,7 +189,7 @@ onMounted(() => {
                     :key="category"
                     :class="[
                       'px-3 py-1 rounded-full text-sm font-medium',
-                      themeStore.isDark ? 'bg-gray-700' : 'bg-gray-200'
+                      themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
                     ]">
                 {{ category }}
               </span>
@@ -199,8 +199,8 @@ onMounted(() => {
           <div>
             <h2 class="text-xl font-semibold mb-2">简介</h2>
             <p
-                class="font-medium whitespace-pre-wrap indent-8"
                 :class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'"
+                class="font-medium whitespace-pre-wrap indent-8"
             >
               {{ movie.intro }}
             </p>
@@ -208,7 +208,7 @@ onMounted(() => {
 
           <div>
             <h2 class="text-xl font-semibold mb-2">相关信息</h2>
-            <p class="font-medium" :class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'">
+            <p :class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'" class="font-medium">
               {{ movie.releaseYear }} | {{ movie.duration }}分钟 | {{ movie.country }} | 评分: {{ movie.rating }}
             </p>
           </div>
@@ -221,17 +221,17 @@ onMounted(() => {
               <div
                   v-for="link in downloadLinks"
                   :key="link.id"
-                  class="relative overflow-hidden rounded-lg border"
                   :class="themeStore.isDark ?
         'border-gray-700 bg-gray-800' :
         'border-gray-200 bg-gray-100'"
+                  class="relative overflow-hidden rounded-lg border"
               >
                 <button
-                    @click="copyToClipboard(link)"
-                    class="w-full text-left transition-colors"
                     :class="themeStore.isDark ?
           'hover:bg-gray-700' :
           'hover:bg-gray-200'"
+                    class="w-full text-left transition-colors"
+                    @click="copyToClipboard(link)"
                 >
                   <div class="flex items-center p-4">
                     <!-- 文件类型标签 -->
@@ -256,12 +256,12 @@ onMounted(() => {
 
                 <!-- 复制成功提示 -->
                 <div
-                    class="absolute inset-0 flex items-center justify-center bg-green-500 text-white transition-all duration-200"
                     :class="[
           copyStatus[link.id]
             ? 'opacity-100 translate-y-0'
             : 'opacity-0 translate-y-full pointer-events-none'
         ]"
+                    class="absolute inset-0 flex items-center justify-center bg-green-500 text-white transition-all duration-200"
                 >
                   已复制到剪贴板！
                 </div>
