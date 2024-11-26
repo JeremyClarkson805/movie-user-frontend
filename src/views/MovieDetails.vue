@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { apiService } from '../services/api'
@@ -61,9 +61,11 @@ const fetchMovieDetail = async (id: string | string[]) => {
     isLoading.value = true
     const response = await apiService.movies.getDetail(id)
     movie.value = response.data
+    document.title = `${movie.value.title} - 电影详情`
     await fetchDownloadLinks(id)
   } catch (error) {
     console.error('Failed to fetch movie details:', error)
+    document.title = '电影详情'
   } finally {
     isLoading.value = false
   }
@@ -98,6 +100,10 @@ onMounted(() => {
   if (route.params.id) {
     fetchMovieDetail(route.params.id)
   }
+})
+
+onUnmounted(() => {
+  document.title = '电影网站'
 })
 </script>
 
