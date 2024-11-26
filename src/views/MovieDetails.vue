@@ -1,21 +1,27 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { apiService } from '../services/api'
+import MovieDownloads from '../components/MovieDownloads.vue'
 
 const route = useRoute()
-const router = useRouter()
 const themeStore = useThemeStore()
 
-interface Writer {
-  id: number
-  name: string
-}
-
-interface Actor {
-  id: number
-  name: string
+interface MovieDetail {
+  movieId: number
+  title: string
+  releaseYear: number
+  duration: string
+  rating: number
+  director: string
+  writers: Array<{ id: number; name: string }>
+  actors: Array<{ id: number; name: string }>
+  categories: string[]
+  posterUrl: string
+  country: string
+  createTime: string
+  intro: string
 }
 
 interface DownloadLink {
@@ -28,22 +34,6 @@ interface DownloadLink {
   passwd: string | null
   createdAt: string | null
   updatedAt: string | null
-}
-
-interface MovieDetail {
-  movieId: number
-  title: string
-  releaseYear: number
-  duration: string
-  rating: number
-  director: string
-  writers: Writer[]
-  actors: Actor[]
-  categories: string[]
-  posterUrl: string
-  country: string
-  createTime: string
-  intro: string
 }
 
 const movie = ref<MovieDetail>({
@@ -63,48 +53,19 @@ const movie = ref<MovieDetail>({
 })
 
 const downloadLinks = ref<DownloadLink[]>([])
-const copyStatus = ref<{ [key: number]: boolean }>({})
 const error = ref('')
-
-// 分类名称映射
-const categoryMapping: { [key: string]: string } = {
-  '动作': 'Action',
-  '犯罪': 'Crime',
-  '喜剧': 'Comedy',
-  '科幻': 'Sci-Fi',
-  '恐怖': 'Horror',
-  '爱情': 'Romantic',
-  '动画': 'Cartoon'
-}
-
-const handleCategoryClick = (category: string) => {
-  // 获取英文分类名
-  const categoryNameEn = categoryMapping[category] || category
-  // 获取完整的URL
-  const baseUrl = window.location.origin
-  const categoryUrl = `${baseUrl}/category/${categoryNameEn}`
-  // 在新窗口打开
-  window.open(categoryUrl, '_blank')
-}
-
-const getFileTypeLabel = (type: string) => {
-  switch (type) {
-    case 'magnet':
-      return { label: '磁力链接', color: 'bg-emerald-600' }
-    case 'aliyun':
-      return { label: '阿里云盘', color: 'bg-blue-500' }
-    default:
-      return { label: '其他', color: 'bg-gray-500' }
-  }
-}
+const isLoading = ref(true)
 
 const fetchMovieDetail = async (id: string | string[]) => {
   try {
+    isLoading.value = true
     const response = await apiService.movies.getDetail(id)
     movie.value = response.data
     await fetchDownloadLinks(id)
   } catch (error) {
     console.error('Failed to fetch movie details:', error)
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -133,164 +94,144 @@ const fetchDownloadLinks = async (movieId: string | string[]) => {
   }
 }
 
-const copyToClipboard = async (link: DownloadLink) => {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(link.downloadUrl)
-    } else {
-      const textarea = document.createElement('textarea')
-      textarea.value = link.downloadUrl
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.select()
-
-      const successful = document.execCommand('copy')
-      document.body.removeChild(textarea)
-
-      if (!successful) {
-        throw new Error('复制命令执行失败')
-      }
-    }
-
-    copyStatus.value[link.id] = true
-    setTimeout(() => {
-      copyStatus.value[link.id] = false
-    }, 2000)
-  } catch (err) {
-    console.error('Failed to copy:', err)
-    error.value = '复制失败，请尝试手动选择并复制链接'
-  }
-}
-
 onMounted(() => {
   if (route.params.id) {
     fetchMovieDetail(route.params.id)
-  } else {
-    console.error('No movie ID provided in route params')
   }
 })
 </script>
 
 <template>
-  <div class="pt-20">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div class="md:col-span-1">
-        <img :alt="movie.title" :src="movie.posterUrl"
-             class="w-full rounded-lg shadow-xl"/>
+  <div class="pt-20 px-4 md:px-6 lg:px-8">
+    <!-- Loading State -->
+    <div v-if="isLoading"
+         class="min-h-[60vh] flex items-center justify-center">
+      <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error"
+         class="min-h-[60vh] flex items-center justify-center">
+      <div class="text-center">
+        <p class="text-red-500 text-xl mb-4">{{ error }}</p>
+        <button
+            @click="fetchMovieDetail(route.params.id)"
+            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          重试
+        </button>
       </div>
+    </div>
 
-      <div class="md:col-span-2">
-        <h1 class="text-4xl font-bold mb-4">{{ movie.title }}</h1>
-        <div class="space-y-6">
-          <div>
-            <h2 class="text-xl font-semibold mb-2">导演</h2>
-            <p class="font-medium">{{ movie.director }}</p>
+    <!-- Content -->
+    <div v-else class="max-w-6xl mx-auto">
+      <div :class="[
+        'rounded-2xl overflow-hidden shadow-xl',
+        themeStore.isDark ? 'bg-gray-800' : 'bg-white'
+      ]">
+        <!-- Movie Header with Poster and Basic Info -->
+        <div class="relative overflow-hidden">
+          <!-- Background Image (Blurred) -->
+          <div class="absolute inset-0 z-0">
+            <img
+                :src="movie.posterUrl"
+                :alt="movie.title"
+                class="w-full h-full object-cover filter blur-xl opacity-30 transform scale-110"
+            />
           </div>
 
-          <div>
-            <h2 class="text-xl font-semibold mb-2">编剧</h2>
-            <p v-for="writer in movie.writers" :key="writer.id" class="pl-2 font-medium">
-              {{ writer.name }}
-            </p>
-          </div>
+          <!-- Content -->
+          <div class="relative z-10 p-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <!-- Poster -->
+              <div class="lg:col-span-4">
+                <img
+                    :src="movie.posterUrl"
+                    :alt="movie.title"
+                    class="w-full rounded-lg shadow-2xl"
+                    @error="$event.target.src = 'https://placehold.co/400x600/1f2937/ffffff?text=Movie+Poster'"
+                />
+              </div>
 
-          <div>
-            <h2 class="text-xl font-semibold mb-3">演员</h2>
-            <div class="space-y-2">
-              <p v-for="actor in movie.actors" :key="actor.id" class="pl-2 font-medium">
-                {{ actor.name }}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <h2 class="text-xl font-semibold mb-2">分类</h2>
-            <div class="flex flex-wrap gap-2">
-              <button
-                  v-for="category in movie.categories"
-                  :key="category"
-                  @click="handleCategoryClick(category)"
-                  :class="[
-                  'px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200',
-                  themeStore.isDark
-                    ? 'bg-gray-700 hover:bg-gray-600 hover:text-white'
-                    : 'bg-gray-100 hover:bg-gray-200 hover:text-gray-900'
-                ]"
-              >
-                {{ category }}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <h2 class="text-xl font-semibold mb-2">简介</h2>
-            <p
-                :class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'"
-                class="font-medium whitespace-pre-wrap indent-8"
-            >
-              {{ movie.intro }}
-            </p>
-          </div>
-
-          <div>
-            <h2 class="text-xl font-semibold mb-2">相关信息</h2>
-            <p :class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'" class="font-medium">
-              {{ movie.releaseYear }} | {{ movie.duration }}分钟 | {{ movie.country }} | 评分: {{ movie.rating }}
-            </p>
-          </div>
-
-          <div>
-            <h2 class="text-xl font-semibold mb-4">下载链接</h2>
-            <div v-if="error" class="text-red-500 mb-4">{{ error }}</div>
-            <div class="grid gap-4">
-              <div
-                  v-for="link in downloadLinks"
-                  :key="link.id"
-                  :class="themeStore.isDark ?
-                    'border-gray-700 bg-gray-800' :
-                    'border-gray-200 bg-gray-100'"
-                  class="relative overflow-hidden rounded-lg border"
-              >
-                <button
-                    :class="themeStore.isDark ?
-                      'hover:bg-gray-700' :
-                      'hover:bg-gray-200'"
-                    class="w-full text-left transition-colors"
-                    @click="copyToClipboard(link)"
-                >
-                  <div class="flex items-center p-4">
-                    <span
-                        :class="[
-                          'px-2 py-1 rounded text-xs font-medium text-white mr-3',
-                          getFileTypeLabel(link.fileType).color
-                        ]"
-                    >
-                      {{ getFileTypeLabel(link.fileType).label }}
-                    </span>
-
-                    <div class="flex-1 flex items-center justify-between">
-                      <span class="font-medium text-base truncate pr-4">{{ link.linkName }}</span>
-                      <span class="font-medium text-sm opacity-75 whitespace-nowrap">
-                        {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
-                      </span>
-                    </div>
+              <!-- Basic Info -->
+              <div class="lg:col-span-8 flex flex-col justify-center">
+                <h1 class="text-4xl font-bold mb-4 line-clamp-4">{{ movie.title }}</h1>
+                <div class="flex flex-wrap items-center gap-4 mb-6">
+                  <div class="flex items-center">
+                    <span class="text-yellow-400 mr-2 text-2xl">⭐</span>
+                    <span class="text-2xl font-bold">{{ movie.rating ? movie.rating.toFixed(1) : 'N/A' }}</span>
                   </div>
-                </button>
+                  <span class="text-lg">{{ movie.releaseYear }}</span>
+                  <span class="text-lg">{{ movie.duration }}分钟</span>
+                  <span class="text-lg">{{ movie.country }}</span>
+                </div>
 
-                <div
-                    :class="[
-                      copyStatus[link.id]
-                        ? 'opacity-100 translate-y-0'
-                        : 'opacity-0 translate-y-full pointer-events-none'
-                    ]"
-                    class="absolute inset-0 flex items-center justify-center bg-green-500 text-white transition-all duration-200"
-                >
-                  已复制到剪贴板！
+                <!-- Categories -->
+                <div class="flex flex-wrap gap-2">
+                  <span v-for="category in movie.categories"
+                        :key="category"
+                        :class="[
+                          'px-3 py-1 rounded-full text-sm font-medium transition-colors',
+                          themeStore.isDark
+                            ? 'bg-gray-700 hover:bg-gray-600'
+                            : 'bg-gray-100 hover:bg-gray-200'
+                        ]">
+                    {{ category }}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Movie Details -->
+        <div class="p-8 space-y-8">
+          <!-- Synopsis -->
+          <div>
+            <h2 class="text-xl font-semibold mb-3">剧情简介</h2>
+            <p class="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+              {{ movie.intro }}
+            </p>
+          </div>
+
+          <!-- Cast & Crew -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Director -->
+            <div>
+              <h2 class="text-xl font-semibold mb-3">导演</h2>
+              <p class="text-gray-600 dark:text-gray-300">{{ movie.director }}</p>
+            </div>
+
+            <!-- Writers -->
+            <div>
+              <h2 class="text-xl font-semibold mb-3">编剧</h2>
+              <div class="space-y-2">
+                <p v-for="writer in movie.writers"
+                   :key="writer.id"
+                   class="text-gray-600 dark:text-gray-300">
+                  {{ writer.name }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actors -->
+          <div>
+            <h2 class="text-xl font-semibold mb-3">演员表</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div v-for="actor in movie.actors"
+                   :key="actor.id"
+                   class="text-gray-600 dark:text-gray-300">
+                {{ actor.name }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Download Links -->
+          <MovieDownloads
+              v-if="downloadLinks.length > 0"
+              :links="downloadLinks"
+          />
         </div>
       </div>
     </div>
