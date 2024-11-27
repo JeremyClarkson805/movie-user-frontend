@@ -14,11 +14,10 @@ const showLogin = ref(false)
 const showRegister = ref(false)
 
 onMounted(async () => {
-  if (themeStore.isDark) {
-    document.documentElement.classList.add('dark')
-  }
+  // 初始化主题
+  themeStore.initializeTheme()
 
-  // Initialize the app
+  // 初始化应用
   await appStore.initialize()
 })
 

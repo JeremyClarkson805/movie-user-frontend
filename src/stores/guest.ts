@@ -12,24 +12,32 @@ export const useGuestStore = defineStore('guest', () => {
         try {
             const storedToken = localStorage.getItem('guestToken')
 
-            // Return stored token if it exists and we're not forcing a refresh
+            // 如果有存储的token且不是强制刷新，先验证token
             if (!forceRefresh && storedToken) {
-                guestToken.value = storedToken
-                return
+                try {
+                    // 尝试使用stored token进行一个简单的API调用来验证
+                    await apiService.movies.getList({ page: 1, pageSize: 1 })
+                    guestToken.value = storedToken
+                    return
+                } catch (err) {
+                    // 如果验证失败，清除token并继续获取新token
+                    localStorage.removeItem('guestToken')
+                    guestToken.value = null
+                }
             }
 
             isLoading.value = true
             error.value = null
 
-            // Get browser fingerprint
+            // 获取浏览器指纹
             const fp = await FingerprintJS.load()
             const result = await fp.get()
             const fingerprint = result.visitorId
 
-            // Get client IP
+            // 获取客户端IP
             const ip = await getClientIP()
 
-            // Get guest token from API
+            // 从API获取游客token
             const response = await apiService.guest.initialize({
                 fingerprint,
                 userAgent: navigator.userAgent,
@@ -43,17 +51,17 @@ export const useGuestStore = defineStore('guest', () => {
             error.value = err instanceof Error ? err.message : 'Failed to initialize guest'
             console.error('Guest initialization error:', err)
 
-            // Clear invalid token if any
+            // 清除无效token
             localStorage.removeItem('guestToken')
             guestToken.value = null
 
-            throw err // Re-throw to handle in the interceptor
+            throw err // 重新抛出错误以便在app store中处理
         } finally {
             isLoading.value = false
         }
     }
 
-    // Helper function to get client IP
+    // 获取客户端IP的辅助函数
     const getClientIP = async (): Promise<string> => {
         try {
             const response = await fetch('https://api.ipify.org?format=json')

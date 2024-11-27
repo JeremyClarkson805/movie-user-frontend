@@ -18,24 +18,58 @@ export const useAppStore = defineStore('app', () => {
             isInitializing.value = true
             error.value = null
             errorCode.value = undefined
+            isReady.value = false
 
-            // Check for existing user token
+            // 检查用户 token
             const userToken = localStorage.getItem('userToken')
 
             if (userToken) {
-                // Initialize auth store with existing user token
-                await authStore.initializeFromStorage()
-            } else {
-                // Initialize guest token if no user token exists
-                await guestStore.initializeGuest()
-            }
+                try {
+                    // 尝试初始化认证存储
+                    await authStore.initializeFromStorage()
+                    isReady.value = true
+                } catch (err) {
+                    console.error('Auth initialization failed:', err)
+                    const apiError = handleApiError(err)
+                    error.value = apiError.message
+                    errorCode.value = apiError.statusCode
 
-            isReady.value = true
+                    // 清除无效的用户 token
+                    localStorage.removeItem('userToken')
+                    localStorage.removeItem('userInfo')
+
+                    // 尝试初始化游客模式
+                    try {
+                        await guestStore.initializeGuest(true)
+                        isReady.value = true
+                        // 清除错误，因为游客模式初始化成功
+                        error.value = null
+                        errorCode.value = undefined
+                    } catch (guestErr) {
+                        const guestApiError = handleApiError(guestErr)
+                        error.value = guestApiError.message
+                        errorCode.value = guestApiError.statusCode
+                        isReady.value = false
+                    }
+                }
+            } else {
+                // 没有用户 token，初始化游客模式
+                try {
+                    await guestStore.initializeGuest()
+                    isReady.value = true
+                } catch (err) {
+                    const apiError = handleApiError(err)
+                    error.value = apiError.message
+                    errorCode.value = apiError.statusCode
+                    isReady.value = false
+                }
+            }
         } catch (err) {
             console.error('App initialization failed:', err)
             const apiError = handleApiError(err)
             error.value = apiError.message
             errorCode.value = apiError.statusCode
+            isReady.value = false
         } finally {
             isInitializing.value = false
         }
