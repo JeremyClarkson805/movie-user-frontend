@@ -3,11 +3,13 @@ import { ref, onMounted } from 'vue'
 import Navbar from './components/Navbar.vue'
 import Login from './views/Login.vue'
 import Register from './views/Register.vue'
+import GlobalLoading from './components/GlobalLoading.vue'
+import ErrorNotification from './components/ErrorNotification.vue'
 import { useThemeStore } from './stores/theme'
-import { useGuestStore } from "./stores/guest"
+import { useAppStore } from './stores/app'
 
 const themeStore = useThemeStore()
-const guestStore = useGuestStore()
+const appStore = useAppStore()
 const showLogin = ref(false)
 const showRegister = ref(false)
 
@@ -16,13 +18,8 @@ onMounted(async () => {
     document.documentElement.classList.add('dark')
   }
 
-  // 检查本地存储中是否存在Authorization token
-  const localAuth = localStorage.getItem('userToken')
-
-  // 只在没有Authorization token时初始化游客功能
-  if (!localAuth) {
-    await guestStore.initializeGuest()
-  }
+  // Initialize the app
+  await appStore.initialize()
 })
 
 const handleShowLogin = () => {
@@ -45,14 +42,27 @@ const handleCloseRegister = () => {
 </script>
 
 <template>
-  <div :class="[
-    // 'min-h-screen transition-colors duration-200 scale-90 origin-top',
+  <!-- Global Loading -->
+  <GlobalLoading v-if="appStore.isInitializing" />
+
+  <!-- Main App Content -->
+  <div v-else :class="[
     'min-h-screen transition-colors duration-200',
     themeStore.isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
   ]">
     <Navbar @show-login="handleShowLogin" @show-register="handleShowRegister" />
     <main class="container mx-auto px-4 py-8">
-      <router-view></router-view>
+      <router-view v-if="appStore.isReady"></router-view>
+
+      <!-- Error State -->
+      <div v-else-if="appStore.error"
+           class="flex items-center justify-center min-h-[60vh]">
+        <ErrorNotification
+            :error="appStore.error"
+            :status-code="appStore.errorCode"
+            :on-retry="appStore.initialize"
+        />
+      </div>
     </main>
 
     <Login v-if="showLogin" @close="handleCloseLogin" @show-register="handleShowRegister" />
@@ -65,7 +75,4 @@ const handleCloseRegister = () => {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-/*html, body {
-  min-height: 111.11vh; !* 100/0.9 ≈ 111.11 *!
-}*/
 </style>

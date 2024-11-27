@@ -19,8 +19,7 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   const isLoading = ref(false)
 
-  // Initialize from localStorage
-  const initializeFromStorage = () => {
+  const initializeFromStorage = async () => {
     const storedToken = localStorage.getItem('userToken')
     const storedUser = localStorage.getItem('userInfo')
 
@@ -28,11 +27,10 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = storedToken
       userInfo.value = JSON.parse(storedUser)
       isAuthenticated.value = true
+      return true
     }
+    return false
   }
-
-  // Call initialization
-  initializeFromStorage()
 
   const login = async (credentials: { email: string; password: string }) => {
     try {
@@ -100,6 +98,7 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     isLoading,
     login,
-    logout
+    logout,
+    initializeFromStorage
   }
 })
