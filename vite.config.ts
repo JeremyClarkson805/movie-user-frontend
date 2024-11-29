@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import fs from 'fs'
 
 export default defineConfig({
   plugins: [vue()],
@@ -11,6 +12,11 @@ export default defineConfig({
 
     // 自动打开浏览器
     open: true,
+
+    https: {
+      key: fs.readFileSync('./localhost+2-key.pem'),
+      cert: fs.readFileSync('./localhost+2.pem'),
+    },
 
     // 配置代理
     proxy: {
