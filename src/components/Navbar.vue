@@ -5,6 +5,10 @@ import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
 
 const emit = defineEmits(['show-login', 'show-register'])
+const router = useRouter()
+const route = useRoute()
+const themeStore = useThemeStore()
+const authStore = useAuthStore()
 
 const categories = [
   { name: '首页', nameEn: 'home', isHome: true },
@@ -19,26 +23,12 @@ const categories = [
 
 const searchQuery = ref('')
 const showUserMenu = ref(false)
-const router = useRouter()
-const route = useRoute()
-const themeStore = useThemeStore()
-const authStore = useAuthStore()
+const showMobileMenu = ref(false)
 const isNavVisible = ref(true)
 const lastScrollPosition = ref(0)
 
 const handleSearch = () => {
   router.push(`/search?q=${searchQuery.value}`)
-}
-
-const handleClickOutside = (event: MouseEvent) => {
-  const userMenu = document.getElementById('user-menu')
-  const userButton = document.getElementById('user-button')
-
-  if (userMenu && userButton &&
-      !userMenu.contains(event.target as Node) &&
-      !userButton.contains(event.target as Node)) {
-    showUserMenu.value = false
-  }
 }
 
 const handleScroll = () => {
@@ -59,16 +49,34 @@ const handleCategoryClick = (category: { nameEn: string, isHome?: boolean }) => 
   } else {
     router.push(`/category/${category.nameEn}`)
   }
+  showMobileMenu.value = false
+}
+
+// 处理用户菜单的点击事件
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value
+}
+
+// 处理点击其他区域关闭菜单
+const handleClickOutside = (event: MouseEvent) => {
+  const userMenu = document.getElementById('user-menu')
+  const userButton = document.getElementById('user-menu-button')
+
+  if (userMenu && userButton &&
+      !userMenu.contains(event.target as Node) &&
+      !userButton.contains(event.target as Node)) {
+    showUserMenu.value = false
+  }
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
   window.addEventListener('scroll', handleScroll, { passive: true })
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
   window.removeEventListener('scroll', handleScroll)
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -80,9 +88,12 @@ onUnmounted(() => {
   ]">
     <div class="container mx-auto px-4">
       <div class="flex items-center justify-between h-16">
+        <!-- Logo and Categories -->
         <div class="flex items-center space-x-8">
           <router-link to="/" class="text-xl font-bold whitespace-nowrap">MovieHub</router-link>
-          <div class="hidden md:flex space-x-4 overflow-x-auto no-scrollbar">
+
+          <!-- Desktop Categories -->
+          <div class="hidden lg:flex space-x-4 overflow-x-auto no-scrollbar">
             <button
                 v-for="category in categories"
                 :key="category.nameEn"
@@ -99,7 +110,9 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <!-- Right Side Actions -->
         <div class="flex items-center space-x-4">
+          <!-- Theme Toggle -->
           <button
               @click="themeStore.toggleTheme"
               class="p-2 rounded-lg"
@@ -109,7 +122,8 @@ onUnmounted(() => {
             <span v-else>🌙</span>
           </button>
 
-          <div class="relative">
+          <!-- Search Bar -->
+          <div class="relative hidden sm:block">
             <input
                 v-model="searchQuery"
                 @keyup.enter="handleSearch"
@@ -122,42 +136,52 @@ onUnmounted(() => {
             />
           </div>
 
+          <!-- Mobile Menu Button -->
+          <button
+              @click="showMobileMenu = !showMobileMenu"
+              class="lg:hidden p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+          </button>
+
+          <!-- User Menu -->
           <div class="relative">
             <button
-                id="user-button"
-                @click="showUserMenu = !showUserMenu"
-                :class="[
-                'w-10 h-10 rounded-full flex items-center justify-center',
-                themeStore.isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
-              ]"
+                id="user-menu-button"
+                @click="toggleUserMenu"
+                class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                :class="themeStore.isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'"
             >
               <span class="text-xl">👤</span>
             </button>
 
-            <div v-if="showUserMenu"
-                 id="user-menu"
-                 :class="[
-                'absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-2',
-                themeStore.isDark ? 'bg-gray-800' : 'bg-white'
-              ]">
+            <!-- Dropdown Menu -->
+            <div
+                id="user-menu"
+                v-show="showUserMenu"
+                class="absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-2 transition-all duration-200 origin-top-right"
+                :class="themeStore.isDark ? 'bg-gray-800' : 'bg-white'"
+            >
               <!-- Guest Menu -->
               <template v-if="!authStore.isAuthenticated">
                 <button
                     @click="emit('show-register')"
                     :class="[
-                    'block w-full text-left px-4 py-2',
+                    'block w-full text-left px-4 py-2 transition-colors',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">注册</button>
                 <button
                     @click="emit('show-login')"
                     :class="[
-                    'block w-full text-left px-4 py-2',
+                    'block w-full text-left px-4 py-2 transition-colors',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">登录</button>
                 <router-link
                     to="/membership"
                     :class="[
-                    'block w-full text-left px-4 py-2',
+                    'block w-full text-left px-4 py-2 transition-colors',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">会员服务</router-link>
               </template>
@@ -166,18 +190,18 @@ onUnmounted(() => {
               <template v-else>
                 <router-link to="/profile"
                              :class="[
-                    'block px-4 py-2',
+                    'block px-4 py-2 transition-colors',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">个人档案</router-link>
                 <router-link to="/membership"
                              :class="[
-                    'block px-4 py-2',
+                    'block px-4 py-2 transition-colors',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">会员服务</router-link>
                 <button
                     @click="authStore.logout"
                     :class="[
-                    'block w-full text-left px-4 py-2',
+                    'block w-full text-left px-4 py-2 transition-colors',
                     themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   ]">
                   退出登录
@@ -186,6 +210,42 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div
+        v-show="showMobileMenu"
+        class="lg:hidden"
+        :class="themeStore.isDark ? 'bg-gray-800' : 'bg-white'"
+    >
+      <!-- Mobile Search -->
+      <div class="px-4 py-3">
+        <input
+            v-model="searchQuery"
+            @keyup.enter="handleSearch"
+            type="text"
+            placeholder="搜索电影..."
+            class="w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            :class="themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'"
+        />
+      </div>
+
+      <!-- Mobile Categories -->
+      <div class="px-4 py-2 space-y-2">
+        <button
+            v-for="category in categories"
+            :key="category.nameEn"
+            @click="handleCategoryClick(category)"
+            class="block w-full text-left px-4 py-2 rounded-lg transition-colors"
+            :class="[
+              (category.isHome ? route.path === '/' : route.params.category === category.nameEn)
+                ? (themeStore.isDark ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-900')
+                : (themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
+            ]"
+        >
+          {{ category.name }}
+        </button>
       </div>
     </div>
   </nav>
