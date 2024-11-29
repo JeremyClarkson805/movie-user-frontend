@@ -8,6 +8,19 @@ export const useGuestStore = defineStore('guest', () => {
     const isLoading = ref(false)
     const error = ref<string | null>(null)
 
+    const validateGuestToken = async () => {
+        try {
+            // 尝试使用当前token进行一个简单的API调用来验证
+            await apiService.movies.getList({ page: 1, pageSize: 1 })
+            return true
+        } catch (err) {
+            // 如果验证失败，清除token
+            localStorage.removeItem('guestToken')
+            guestToken.value = null
+            throw err
+        }
+    }
+
     const initializeGuest = async (forceRefresh = false) => {
         try {
             const storedToken = localStorage.getItem('guestToken')
@@ -15,14 +28,12 @@ export const useGuestStore = defineStore('guest', () => {
             // 如果有存储的token且不是强制刷新，先验证token
             if (!forceRefresh && storedToken) {
                 try {
-                    // 尝试使用stored token进行一个简单的API调用来验证
-                    await apiService.movies.getList({ page: 1, pageSize: 1 })
+                    await validateGuestToken()
                     guestToken.value = storedToken
                     return
                 } catch (err) {
-                    // 如果验证失败，清除token并继续获取新token
-                    localStorage.removeItem('guestToken')
-                    guestToken.value = null
+                    // 验证失败会继续获取新token
+                    console.error('Guest token validation failed:', err)
                 }
             }
 
@@ -78,6 +89,7 @@ export const useGuestStore = defineStore('guest', () => {
         isLoading,
         error,
         initializeGuest,
+        validateGuestToken,
         $reset: () => {
             guestToken.value = null
             isLoading.value = false

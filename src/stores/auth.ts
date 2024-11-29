@@ -24,10 +24,23 @@ export const useAuthStore = defineStore('auth', () => {
     const storedUser = localStorage.getItem('userInfo')
 
     if (storedToken && storedUser) {
-      token.value = storedToken
-      userInfo.value = JSON.parse(storedUser)
-      isAuthenticated.value = true
-      return true
+      try {
+        // 验证token有效性
+        await apiService.movies.getList({ page: 1, pageSize: 1 })
+
+        token.value = storedToken
+        userInfo.value = JSON.parse(storedUser)
+        isAuthenticated.value = true
+        return true
+      } catch (err) {
+        // 如果验证失败，清除存储的信息
+        localStorage.removeItem('userToken')
+        localStorage.removeItem('userInfo')
+        token.value = null
+        userInfo.value = null
+        isAuthenticated.value = false
+        throw err
+      }
     }
     return false
   }

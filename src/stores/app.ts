@@ -15,6 +15,7 @@ export const useAppStore = defineStore('app', () => {
         const authStore = useAuthStore()
 
         try {
+            // 重置所有状态
             isInitializing.value = true
             error.value = null
             errorCode.value = undefined
@@ -22,10 +23,11 @@ export const useAppStore = defineStore('app', () => {
 
             // 检查用户 token
             const userToken = localStorage.getItem('userToken')
+            const guestToken = localStorage.getItem('guestToken')
 
             if (userToken) {
                 try {
-                    // 尝试初始化认证存储
+                    // 验证用户 token
                     await authStore.initializeFromStorage()
                     isReady.value = true
                 } catch (err) {
@@ -39,30 +41,21 @@ export const useAppStore = defineStore('app', () => {
                     localStorage.removeItem('userInfo')
 
                     // 尝试初始化游客模式
-                    try {
-                        await guestStore.initializeGuest(true)
-                        isReady.value = true
-                        // 清除错误，因为游客模式初始化成功
-                        error.value = null
-                        errorCode.value = undefined
-                    } catch (guestErr) {
-                        const guestApiError = handleApiError(guestErr)
-                        error.value = guestApiError.message
-                        errorCode.value = guestApiError.statusCode
-                        isReady.value = false
-                    }
+                    await initializeGuestMode()
                 }
-            } else {
-                // 没有用户 token，初始化游客模式
+            } else if (guestToken) {
                 try {
-                    await guestStore.initializeGuest()
+                    // 验证游客 token
+                    await guestStore.validateGuestToken()
                     isReady.value = true
                 } catch (err) {
-                    const apiError = handleApiError(err)
-                    error.value = apiError.message
-                    errorCode.value = apiError.statusCode
-                    isReady.value = false
+                    console.error('Guest token validation failed:', err)
+                    // 如果游客 token 无效，重新初始化游客模式
+                    await initializeGuestMode()
                 }
+            } else {
+                // 没有任何 token，初始化游客模式
+                await initializeGuestMode()
             }
         } catch (err) {
             console.error('App initialization failed:', err)
@@ -72,6 +65,22 @@ export const useAppStore = defineStore('app', () => {
             isReady.value = false
         } finally {
             isInitializing.value = false
+        }
+    }
+
+    const initializeGuestMode = async () => {
+        const guestStore = useGuestStore()
+        try {
+            await guestStore.initializeGuest(true)
+            isReady.value = true
+            error.value = null
+            errorCode.value = undefined
+        } catch (err) {
+            const apiError = handleApiError(err)
+            error.value = apiError.message
+            errorCode.value = apiError.statusCode
+            isReady.value = false
+            throw err
         }
     }
 

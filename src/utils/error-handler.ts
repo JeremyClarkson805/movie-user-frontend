@@ -20,14 +20,27 @@ export const handleApiError = (error: unknown): ApiError => {
 
         // 处理服务器错误
         if (statusCode && statusCode >= 500) {
+            let message = '服务器发生错误'
+            if (statusCode === 503) {
+                message = '服务器暂时不可用，可能正在维护'
+            }
             return {
                 statusCode,
-                message: error.response.data?.message || '服务器发生错误',
-                details: error.response.data?.details
+                message,
+                details: error.response.data?.message || '请稍后重试'
             }
         }
 
-        // 处理客户端错误
+        // 处理认证错误
+        if (statusCode === 401) {
+            return {
+                statusCode,
+                message: '登录已过期或未授权',
+                details: '请重新登录'
+            }
+        }
+
+        // 处理其他客户端错误
         if (statusCode && statusCode >= 400) {
             return {
                 statusCode,

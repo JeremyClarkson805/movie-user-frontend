@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MovieCard from '../components/MovieCard.vue'
+import PageErrorHandler from '../components/PageErrorHandler.vue'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
@@ -27,6 +28,7 @@ const pageSize = ref(20)
 const movies = ref<Movie[]>([])
 const totalPages = ref(0)
 const loading = ref(false)
+const error = ref<Error | null>(null)
 
 const getAuthHeader = () => {
   const userToken = localStorage.getItem('userToken')
@@ -69,13 +71,14 @@ const paginationArray = computed(() => {
 
 const fetchMovies = async () => {
   loading.value = true
+  error.value = null
+
   try {
     const params = new URLSearchParams({
       page: page.value.toString(),
       pageSize: pageSize.value.toString()
     })
 
-    // 如果有分类参数，添加到请求中
     if (route.params.category) {
       params.append('categoryNameEn', route.params.category as string)
     }
@@ -99,10 +102,12 @@ const fetchMovies = async () => {
         await fetchMovies()
       }
     } else {
-      console.error('获取电影数据失败:', response.data.message)
+      throw new Error(response.data.message || '获取电影数据失败')
     }
-  } catch (error) {
-    console.error('请求出错:', error)
+  } catch (err) {
+    console.error('请求出错:', err)
+    error.value = err instanceof Error ? err : new Error('未知错误')
+    movies.value = []
   } finally {
     loading.value = false
   }
@@ -128,7 +133,6 @@ const handleJumpPage = () => {
   }
 }
 
-// 监听路由参数变化，重新获取数据
 watch(
     () => route.params.category,
     () => {
@@ -148,15 +152,14 @@ onMounted(() => {
 
 <template>
   <div class="pt-20 px-4 md:px-6 lg:px-8">
-    <!-- Loading Skeleton -->
-    <div v-if="loading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-      <div v-for="i in pageSize" :key="i" class="animate-pulse">
-        <div class="bg-gray-200 rounded-lg h-72"></div>
-      </div>
-    </div>
+    <PageErrorHandler
+        :error="error"
+        :loading="loading"
+        @retry="fetchMovies"
+    />
 
     <!-- Movie Grid -->
-    <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+    <div v-if="!loading && !error" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
       <MovieCard
           v-for="movie in movies"
           :key="movie.movieId"
@@ -165,7 +168,7 @@ onMounted(() => {
     </div>
 
     <!-- Pagination -->
-    <div class="mt-8 flex flex-wrap justify-center items-center gap-2 pb-8">
+    <div v-if="!loading && !error && movies.length > 0" class="mt-8 flex flex-wrap justify-center items-center gap-2 pb-8">
       <button
           @click="handlePageChange(1)"
           :disabled="page === 1"
