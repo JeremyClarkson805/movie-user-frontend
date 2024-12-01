@@ -1,36 +1,36 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import fs from 'fs'
+import type { ProxyOptions } from 'vite'
 
 export default defineConfig({
   plugins: [vue()],
-
-  // 开发服务器配置
   server: {
-    // 开发服务器端口
     port: 5173,
-
-    // 自动打开浏览器
     open: true,
-
     https: {
       key: fs.readFileSync('./localhost+2-key.pem'),
       cert: fs.readFileSync('./localhost+2.pem'),
     },
-
-    // 配置代理
     proxy: {
-      // 精确匹配 /api 开头的请求
       '/api': {
-        // 目标服务器地址
-        target: 'http://localhost',
-
-        // 是否允许跨域
+        target: 'http://192.168.50.6',
         changeOrigin: true,
-
-        // 路径重写 - 保留 /api 前缀
+        // 使用标准的代理配置
+        headers: {
+          'X-Forwarded-For': '',
+          'X-Real-IP': ''
+        },
+        configure: (proxy, options) => {
+          // 在这里动态修改请求头
+          proxy.on('proxyReq', (proxyReq, req) => {
+            const clientIp = req.socket.remoteAddress || 'unknown';
+            proxyReq.setHeader('X-Forwarded-For', clientIp);
+            proxyReq.setHeader('X-Real-IP', clientIp);
+          });
+        },
         rewrite: (path) => path
-      }
+      } as ProxyOptions
     }
   }
 })
