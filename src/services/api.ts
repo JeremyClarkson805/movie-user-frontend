@@ -2,6 +2,7 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
 import { API_CONFIG } from '../config/api'
 import { useGuestStore } from '../stores/guest'
+import FingerprintJS from '@fingerprintjs/fingerprintjs'
 
 // Create axios instance with default config
 const apiClient: AxiosInstance = axios.create({
@@ -149,6 +150,16 @@ export const apiService = {
                     throw new Error('您的浏览器不支持加密API，请使用更现代的浏览器。')
                 }
 
+                // 获取浏览器指纹
+                const fp = await FingerprintJS.load()
+                const result = await fp.get()
+                const fingerprint = result.visitorId
+
+                // 获取客户端IP
+                const response = await fetch('https://api.ipify.org?format=json')
+                const ipData = await response.json()
+                const ip = ipData.ip
+
                 const encoder = new TextEncoder()
                 const data = encoder.encode(credentials.password)
                 const hashBuffer = await window.crypto.subtle.digest('SHA-256', data)
@@ -158,7 +169,10 @@ export const apiService = {
 
                 return apiClient.post('/api/user/login', {
                     email: credentials.email,
-                    passwd: hashedPassword
+                    passwd: hashedPassword,
+                    fingerprint,
+                    ip,
+                    userAgent: navigator.userAgent
                 })
             } catch (err) {
                 if (err instanceof Error) {
@@ -193,3 +207,5 @@ export const apiService = {
             apiClient.post('/api/user/guest', data)
     }
 }
+
+export default apiService
