@@ -5,6 +5,7 @@ import Profile from '../views/Profile.vue'
 import SearchResults from '../views/SearchResults.vue'
 import MembershipPlans from '../views/MembershipPlans.vue'
 import Subscribe from '../views/Subscribe.vue'
+import NotFound from '../views/NotFound.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -43,6 +44,11 @@ const router = createRouter({
       path: '/subscribe/:plan',
       name: 'subscribe',
       component: Subscribe
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: NotFound
     }
   ]
 })
