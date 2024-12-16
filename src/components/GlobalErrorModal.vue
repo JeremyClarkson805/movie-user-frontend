@@ -25,7 +25,7 @@ const getErrorSolution = (statusCode?: number) => {
     case 401:
       return '登录已过期或未授权。\n\n建议：\n1. 重新登录\n2. 检查账号状态\n3. 联系客服寻求帮助'
     case 423:
-      return '您已被暂时禁止访问。\n\n建议：\n1. 稍后重试\n2. 检查账号状态\n3. 联系客服寻求帮助'
+      return '您已被暂时禁止访问。\n\n建议：\n1. 检查账户密码是否泄露\n2. 检查账号状态\n3. 联系客服寻求帮助'
     default:
       return '发生了意外错误。\n\n建议：\n1. 刷新页面重试\n2. 检查网络连接\n3. 如果问题持续存在，请联系客服'
   }
