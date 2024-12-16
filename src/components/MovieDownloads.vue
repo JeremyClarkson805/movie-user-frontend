@@ -20,6 +20,8 @@ const getFileTypeLabel = (type: string) => {
       return { label: '磁力链接', color: 'bg-emerald-600' }
     case 'aliyun':
       return { label: '阿里云盘', color: 'bg-blue-500' }
+    case 'baidu':
+      return { label: '百度云盘', color: 'bg-teal-500' }
     default:
       return { label: '其他', color: 'bg-gray-500' }
   }
