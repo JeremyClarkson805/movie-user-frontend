@@ -1,18 +1,17 @@
-<!-- ErrorPage.vue -->
 <template>
   <div class="container">
     <div class="content">
       <div class="header">
         <div class="item">
-          <div class="title">Your Client</div>
+          <div class="title">您的客户端</div>
           <div ref="clientStatus" class="status"></div>
         </div>
         <div class="item">
-          <div class="title">Network</div>
+          <div class="title">网络</div>
           <div ref="networkStatus" class="status"></div>
         </div>
         <div class="item">
-          <div class="title">Web Server</div>
+          <div class="title">Web服务器</div>
           <div ref="serverStatus" class="status"></div>
         </div>
       </div>
@@ -25,10 +24,10 @@
       </div>
 
       <div class="help">
-        <div class="help__title">What happened?</div>
+        <div class="help__title">发生了什么?</div>
         <div ref="description" class="help__description"></div>
-        <div class="help__title">What can I do?</div>
-        <div ref="solution" class="help__description">Please try again in a few minutes</div>
+        <div class="help__title">我能做什么?</div>
+        <div ref="solution" class="help__description">请再次检查URL并重试</div>
       </div>
 
       <div class="debug">
@@ -39,10 +38,7 @@
           </div>
         </template>
       </div>
-
-<!--      <div class="footer">-->
-<!--        ShevonKwan ❤️ tarampampam/error-pages-->
-<!--      </div>-->
+      
     </div>
   </div>
 </template>
@@ -91,13 +87,13 @@ const typeWriter = (element, text, speed = 50) => {
 }
 
 const updateStatus = async () => {
-  await typeWriter(clientStatus.value, 'Unknown')
+  await typeWriter(clientStatus.value, '未知状态')
   await new Promise(resolve => setTimeout(resolve, 300))
-  await typeWriter(networkStatus.value, 'Working')
+  await typeWriter(networkStatus.value, '正常运行')
   await new Promise(resolve => setTimeout(resolve, 300))
-  await typeWriter(serverStatus.value, 'Unknown')
+  await typeWriter(serverStatus.value, '正常运行')
   await new Promise(resolve => setTimeout(resolve, 300))
-  await typeWriter(description.value, 'An error occurred while processing your request.')
+  await typeWriter(description.value, '服务器找不到请求的页面')
 }
 
 const updateDebugInfo = () => {
