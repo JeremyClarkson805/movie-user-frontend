@@ -75,8 +75,8 @@ const fetchMovies = async () => {
 
   try {
     const params = new URLSearchParams({
-      page: page.value.toString(),
-      pageSize: pageSize.value.toString()
+      page: page.value.toString()/*,
+      pageSize: pageSize.value.toString()*/
     })
 
     if (route.params.category) {
