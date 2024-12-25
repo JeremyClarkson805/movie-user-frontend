@@ -403,7 +403,7 @@ onMounted(() => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium mb-1">别</label>
+              <label class="block text-sm font-medium mb-1">性别</label>
               <select
                   v-model="editForm.gender"
                   :class="[
