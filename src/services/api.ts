@@ -3,6 +3,7 @@ import type { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
 import { API_CONFIG } from '../config/api'
 import { useGuestStore } from '../stores/guest'
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
+import { getClientIP } from '../utils/ip-detector'
 
 // Create axios instance with default config
 const apiClient: AxiosInstance = axios.create({
@@ -155,10 +156,8 @@ export const apiService = {
                 const result = await fp.get()
                 const fingerprint = result.visitorId
 
-                // 获取客户端IP
-                const response = await fetch('https://api.ipify.org?format=json')
-                const ipData = await response.json()
-                const ip = ipData.ip
+                // 获取客户端IP - 使用新的 IP 检测工具
+                const ip = await getClientIP()
 
                 const encoder = new TextEncoder()
                 const data = encoder.encode(credentials.password)
@@ -176,7 +175,11 @@ export const apiService = {
                 })
             } catch (err) {
                 if (err instanceof Error) {
-                    throw new Error(`登录失败: ${err.message}`)
+                    // 提供更具体的错误信息
+                    const errorMessage = err.message.includes('Failed to fetch')
+                        ? '网络连接失败，请检查网络设置后重试'
+                        : `登录失败: ${err.message}`
+                    throw new Error(errorMessage)
                 }
                 throw new Error('登录过程中发生未知错误')
             }
