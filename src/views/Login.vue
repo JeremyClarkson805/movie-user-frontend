@@ -23,7 +23,6 @@ const handleSubmit = async () => {
 
     if (success) {
       emit('close')
-
     }
   } finally {
     isLoading.value = false
@@ -36,9 +35,9 @@ const switchToRegister = () => {
 }
 
 const handleForgotPassword = () => {
-  console.log('Forgot password clicked')
+  emit('close')
+  router.push('/forgot-password')
 }
-
 
 const handleClose = () => {
   authStore.resetState() // 关闭时重置状态
@@ -51,7 +50,6 @@ onUnmounted(() => {
   password.value = ''
   authStore.resetState()
 })
-
 </script>
 
 <template>
@@ -105,7 +103,7 @@ onUnmounted(() => {
                 @click="handleForgotPassword"
                 class="text-sm text-blue-500 hover:underline"
             >
-              忘记密码了?
+              忘记密码?
             </button>
           </div>
 
@@ -121,7 +119,7 @@ onUnmounted(() => {
         </form>
 
         <p class="mt-4 text-sm text-center">
-          还没有一个账户?
+          还没有账户?
           <button @click="switchToRegister" class="text-blue-500 hover:underline">
             点击这里注册
           </button>
