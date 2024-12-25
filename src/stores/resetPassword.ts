@@ -12,7 +12,13 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
         try {
             isLoading.value = true
             error.value = null
-            await apiService.auth.sendResetCode(email)
+
+            const response = await apiService.resetPassword.sendResetCode(email)
+            if (response.code === 200) {
+                return true
+            } else {
+                throw new Error(response.message || '发送验证码失败')
+            }
         } catch (err) {
             error.value = err instanceof Error ? err.message : '发送验证码失败'
             throw err
@@ -25,9 +31,15 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
         try {
             isLoading.value = true
             error.value = null
-            await apiService.auth.verifyResetCode(email, code)
-            isVerified.value = true
-            verifiedEmail.value = email
+
+            const response = await apiService.resetPassword.verifyCode(email, code)
+            if (response.code === 200) {
+                isVerified.value = true
+                verifiedEmail.value = email
+                return true
+            } else {
+                throw new Error(response.message || '验证码验证失败')
+            }
         } catch (err) {
             error.value = err instanceof Error ? err.message : '验证码验证失败'
             throw err
@@ -40,10 +52,16 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
         try {
             isLoading.value = true
             error.value = null
-            await apiService.auth.resetPassword(verifiedEmail.value, newPassword)
-            // 重置成功后清空状态
-            isVerified.value = false
-            verifiedEmail.value = ''
+
+            const response = await apiService.resetPassword.resetPassword(verifiedEmail.value, newPassword)
+            if (response.code === 200) {
+                // 重置成功后清空状态
+                isVerified.value = false
+                verifiedEmail.value = ''
+                return true
+            } else {
+                throw new Error(response.message || '重置密码失败')
+            }
         } catch (err) {
             error.value = err instanceof Error ? err.message : '重置密码失败'
             throw err

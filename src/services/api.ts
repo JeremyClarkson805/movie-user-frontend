@@ -131,6 +131,17 @@ interface RegisterData {
     passwd: string
 }
 
+interface LoginCredentials {
+    email: string
+    password: string
+}
+
+interface RegisterData {
+    userName: string
+    email: string
+    passwd: string
+}
+
 // API service
 export const apiService = {
     // Movie related APIs
@@ -208,6 +219,18 @@ export const apiService = {
     guest: {
         initialize: (data: { fingerprint: string, userAgent: string, ip: string }) =>
             apiClient.post('/api/user/guest', data)
+    },
+
+    // Reset password related APIs
+    resetPassword: {
+        sendResetCode: (email: string) =>
+            apiClient.post('/api/user/resetPasswd/sendResetCode', { email }),
+
+        verifyCode: (email: string, code: string) =>
+            apiClient.post('/api/user/resetPasswd/verify', { email, code }),
+
+        resetPassword: (email: string, newPassword: string) =>
+            apiClient.post('/api/user/resetPasswd', { email, newPassword })
     }
 }
 
