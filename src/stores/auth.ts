@@ -19,6 +19,11 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   const isLoading = ref(false)
 
+  const resetState = () => {
+    error.value = null
+    isLoading.value = false
+  }
+
   const initializeFromStorage = async () => {
     const storedToken = localStorage.getItem('userToken')
     const storedUser = localStorage.getItem('userInfo')
@@ -112,6 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     login,
     logout,
-    initializeFromStorage
+    initializeFromStorage,
+    resetState // 导出重置方法
   }
 })

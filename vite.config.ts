@@ -16,13 +16,11 @@ export default defineConfig({
       '/api': {
         target: 'http://192.168.50.6',
         changeOrigin: true,
-        // 使用标准的代理配置
         headers: {
           'X-Forwarded-For': '',
           'X-Real-IP': ''
         },
         configure: (proxy, options) => {
-          // 在这里动态修改请求头
           proxy.on('proxyReq', (proxyReq, req) => {
             const clientIp = req.socket.remoteAddress || 'unknown';
             proxyReq.setHeader('X-Forwarded-For', clientIp);
@@ -30,7 +28,12 @@ export default defineConfig({
           });
         },
         rewrite: (path) => path
-      } as ProxyOptions
+      },
+      '/ip-api': {
+        target: 'https://api.ip.sb',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ip-api/, '')
+      }
     }
   }
 })

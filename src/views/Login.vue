@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
@@ -30,10 +30,6 @@ const handleSubmit = async () => {
   }
 }
 
-const handleClose = () => {
-  emit('close')
-}
-
 const switchToRegister = () => {
   emit('close')
   emit('show-register')
@@ -42,6 +38,20 @@ const switchToRegister = () => {
 const handleForgotPassword = () => {
   console.log('Forgot password clicked')
 }
+
+
+const handleClose = () => {
+  authStore.resetState() // 关闭时重置状态
+  emit('close')
+}
+
+// 在组件卸载时重置表单和错误状态
+onUnmounted(() => {
+  email.value = ''
+  password.value = ''
+  authStore.resetState()
+})
+
 </script>
 
 <template>
@@ -70,7 +80,7 @@ const handleForgotPassword = () => {
                 type="email"
                 required
                 :class="[
-                'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ',
                 themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
               ]"
             />
