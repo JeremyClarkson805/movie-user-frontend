@@ -36,6 +36,7 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
             if (response.code === 200) {
                 isVerified.value = true
                 verifiedEmail.value = email
+                localStorage.setItem("code", code)
                 return true
             } else {
                 throw new Error(response.message || '验证码验证失败')
@@ -52,12 +53,14 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
         try {
             isLoading.value = true
             error.value = null
+            var code = localStorage.getItem("code")
 
-            const response = await apiService.resetPassword.resetPassword(verifiedEmail.value, newPassword)
+            const response = await apiService.resetPassword.setNewPassword(verifiedEmail.value, newPassword, code)
             if (response.code === 200) {
                 // 重置成功后清空状态
                 isVerified.value = false
                 verifiedEmail.value = ''
+                localStorage.removeItem("code")
                 return true
             } else {
                 throw new Error(response.message || '重置密码失败')

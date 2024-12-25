@@ -131,15 +131,9 @@ interface RegisterData {
     passwd: string
 }
 
-interface LoginCredentials {
+interface VerifyCodeData {
     email: string
-    password: string
-}
-
-interface RegisterData {
-    userName: string
-    email: string
-    passwd: string
+    code: string
 }
 
 // API service
@@ -227,10 +221,26 @@ export const apiService = {
             apiClient.post('/api/user/resetPasswd/sendResetCode', { email }),
 
         verifyCode: (email: string, code: string) =>
-            apiClient.post('/api/user/resetPasswd/verify', { email, code }),
+            apiClient.post('/api/user/resetPasswd/verify', {
+                email,
+                code
+            }),
 
-        resetPassword: (email: string, newPassword: string) =>
-            apiClient.post('/api/user/resetPasswd', { email, newPassword })
+        async setNewPassword(email: string, password: string, code: string) {
+            // 使用 SHA-256 加密密码
+            const encoder = new TextEncoder()
+            const data = encoder.encode(password)
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+            const hashArray = Array.from(new Uint8Array(hashBuffer))
+            const hashedPassword = hashArray.map(byte =>
+                byte.toString(16).padStart(2, '0')).join('').toUpperCase()
+
+            return apiClient.post('/api/user/resetPasswd/setNewPasswd', {
+                email,
+                password: hashedPassword,
+                code
+            })
+        }
     }
 }
 
