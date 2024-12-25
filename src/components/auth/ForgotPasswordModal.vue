@@ -25,7 +25,7 @@ const handleResetSuccess = () => {
   <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
     <div class="max-w-md w-full mx-4">
       <div :class="[
-        'rounded-lg p-8 relative',
+        'rounded-lg p-8 relative overflow-hidden',
         themeStore.isDark ? 'bg-gray-800/95' : 'bg-white/95'
       ]">
         <button
@@ -40,11 +40,45 @@ const handleResetSuccess = () => {
 
         <h1 class="text-2xl font-bold mb-6">重置密码</h1>
 
-        <div v-if="resetPasswordStore.successMessage" class="text-center py-8">
-          <div class="text-green-500 text-6xl mb-4">✓</div>
-          <h3 class="text-xl font-semibold mb-2">{{ resetPasswordStore.successMessage }}</h3>
-          <p class="text-gray-500">即将为您跳转到登录页面...</p>
+        <div v-if="resetPasswordStore.successMessage"
+             class="relative py-12 text-center">
+          <!-- Success Animation Background -->
+          <div class="absolute inset-0 bg-gradient-to-r from-green-500/20 to-blue-500/20 animate-pulse"></div>
+
+          <!-- Success Icon with Animation -->
+          <div class="relative">
+            <div class="inline-block">
+              <svg class="w-24 h-24 text-green-500 animate-bounce"
+                   fill="none"
+                   stroke="currentColor"
+                   viewBox="0 0 24 24">
+                <path stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                </path>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Success Message -->
+          <div class="mt-6 space-y-4">
+            <h3 class="text-2xl font-bold text-green-500">
+              密码重置成功！
+            </h3>
+            <p class="text-lg" :class="themeStore.isDark ? 'text-gray-300' : 'text-gray-600'">
+              {{ resetPasswordStore.successMessage }}
+            </p>
+
+            <!-- Loading Indicator -->
+            <div class="mt-8 flex items-center justify-center space-x-2">
+              <div class="w-2 h-2 rounded-full bg-blue-500 animate-bounce"></div>
+              <div class="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style="animation-delay: 0.2s"></div>
+              <div class="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style="animation-delay: 0.4s"></div>
+            </div>
+          </div>
         </div>
+
         <template v-else>
           <ResetPasswordForm v-if="!resetPasswordStore.isVerified" />
           <NewPasswordForm v-else @reset-success="handleResetSuccess" />
@@ -53,3 +87,11 @@ const handleResetSuccess = () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+</style>
