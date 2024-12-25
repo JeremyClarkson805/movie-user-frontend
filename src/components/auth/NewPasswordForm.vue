@@ -4,6 +4,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useResetPasswordStore } from '@/stores/resetPassword'
 import { validatePassword } from '@/utils/validators'
 
+const emit = defineEmits(['resetSuccess'])
 const themeStore = useThemeStore()
 const resetPasswordStore = useResetPasswordStore()
 
@@ -25,7 +26,12 @@ watch([newPassword, confirmPassword], () => {
 
 const handleSubmit = async () => {
   if (error.value) return
-  await resetPasswordStore.resetPassword(newPassword.value)
+  try {
+    await resetPasswordStore.resetPassword(newPassword.value)
+    emit('resetSuccess')
+  } catch (err) {
+    // Error handling is managed by the store
+  }
 }
 </script>
 

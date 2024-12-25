@@ -3,17 +3,17 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
-import ForgotPasswordModal from '../components/auth/ForgotPasswordModal.vue'
+import { useModalStore } from '../stores/modalStore'
 
-const emit = defineEmits(['close', 'show-register'])
+const emit = defineEmits(['close'])
 const router = useRouter()
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
+const modalStore = useModalStore()
 
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
-const showForgotPassword = ref(false)
 
 const handleSubmit = async () => {
   try {
@@ -24,25 +24,24 @@ const handleSubmit = async () => {
     })
 
     if (success) {
-      emit('close')
+      modalStore.closeModal()
     }
   } finally {
     isLoading.value = false
   }
 }
 
-const switchToRegister = () => {
-  emit('close')
-  emit('show-register')
+const handleForgotPassword = () => {
+  modalStore.openResetPassword()
 }
 
-const handleForgotPassword = () => {
-  showForgotPassword.value = true
+const handleShowRegister = () => {
+  modalStore.openRegister()
 }
 
 const handleClose = () => {
   authStore.resetState()
-  emit('close')
+  modalStore.closeModal()
 }
 
 onUnmounted(() => {
@@ -100,7 +99,6 @@ onUnmounted(() => {
 
           <div class="flex justify-end">
             <button
-                type="button"
                 @click="handleForgotPassword"
                 class="text-sm text-blue-500 hover:underline"
             >
@@ -121,7 +119,10 @@ onUnmounted(() => {
 
         <p class="mt-4 text-sm text-center">
           还没有账户?
-          <button @click="switchToRegister" class="text-blue-500 hover:underline">
+          <button
+              @click="handleShowRegister"
+              class="text-blue-500 hover:underline"
+          >
             点击这里注册
           </button>
         </p>

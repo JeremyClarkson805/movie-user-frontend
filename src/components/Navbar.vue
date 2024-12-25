@@ -1,14 +1,15 @@
-<script setup lang="ts">
+<<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
+import { useModalStore } from '../stores/modalStore'
 
-const emit = defineEmits(['show-login', 'show-register'])
 const router = useRouter()
 const route = useRoute()
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
+const modalStore = useModalStore()
 
 const categories = [
   { name: '首页', nameEn: 'home', isHome: true },
@@ -68,6 +69,15 @@ const handleClickOutside = (event: MouseEvent) => {
     showUserMenu.value = false
   }
 }
+
+const handleShowLogin = () => {
+  modalStore.openLogin()
+}
+
+const handleShowRegister = () => {
+  modalStore.openRegister()
+}
+
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
@@ -167,17 +177,23 @@ onUnmounted(() => {
               <!-- Guest Menu -->
               <template v-if="!authStore.isAuthenticated">
                 <button
-                    @click="emit('show-register')"
+                    @click="handleShowRegister"
                     :class="[
-                    'block w-full text-left px-4 py-2 transition-colors',
-                    themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  ]">注册</button>
+        'block w-full text-left px-4 py-2 transition-colors',
+        themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+      ]"
+                >
+                  注册
+                </button>
                 <button
-                    @click="emit('show-login')"
+                    @click="handleShowLogin"
                     :class="[
-                    'block w-full text-left px-4 py-2 transition-colors',
-                    themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  ]">登录</button>
+        'block w-full text-left px-4 py-2 transition-colors',
+        themeStore.isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+      ]"
+                >
+                  登录
+                </button>
                 <router-link
                     to="/membership"
                     :class="[

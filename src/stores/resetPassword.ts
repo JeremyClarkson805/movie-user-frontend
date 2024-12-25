@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiService } from '../services/api'
-import { useRouter } from 'vue-router'
+import { useModalStore } from './modalStore'
 
 export const useResetPasswordStore = defineStore('resetPassword', () => {
-    const router = useRouter()
+    const modalStore = useModalStore()
     const isLoading = ref(false)
     const error = ref<string | null>(null)
     const isVerified = ref(false)
     const verifiedEmail = ref('')
+    const successMessage = ref('')
 
     const sendVerificationCode = async (email: string) => {
         try {
@@ -46,7 +47,7 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
             isLoading.value = true
             error.value = null
             const code = localStorage.getItem('resetCode')
-            
+
             if (!code || !verifiedEmail.value) {
                 throw new Error('验证信息已过期，请重新验证')
             }
@@ -57,12 +58,16 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
                 code
             )
 
-            // 清理状态
-            $reset()
-            localStorage.removeItem('resetCode')
-            
-            // 跳转到登录页
-            router.push('/login')
+            // Set success message
+            successMessage.value = '密码重置成功！请使用新密码登录。'
+
+            // Clear state after a delay
+            setTimeout(() => {
+                $reset()
+                localStorage.removeItem('resetCode')
+                modalStore.openLogin()
+            }, 5000)
+
             return true
         } catch (err) {
             error.value = err instanceof Error ? err.message : '重置密码失败'
@@ -77,12 +82,14 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
         error.value = null
         isVerified.value = false
         verifiedEmail.value = ''
+        successMessage.value = ''
     }
 
     return {
         isLoading,
         error,
         isVerified,
+        successMessage,
         sendVerificationCode,
         verifyCode,
         resetPassword,
