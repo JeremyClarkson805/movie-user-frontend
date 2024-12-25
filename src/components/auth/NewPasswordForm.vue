@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useThemeStore } from '../../stores/theme'
-import { useResetPasswordStore } from '../../stores/resetPassword'
-import { validatePassword } from '../../utils/validators'
+import { useThemeStore } from '@/stores/theme'
+import { useResetPasswordStore } from '@/stores/resetPassword'
+import { validatePassword } from '@/utils/validators'
 
 const themeStore = useThemeStore()
 const resetPasswordStore = useResetPasswordStore()
@@ -38,9 +38,9 @@ const handleSubmit = async () => {
           type="password"
           required
           :class="[
-          'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-          themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
-        ]"
+            'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+            themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
+          ]"
       />
     </div>
 
@@ -51,9 +51,9 @@ const handleSubmit = async () => {
           type="password"
           required
           :class="[
-          'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-          themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
-        ]"
+            'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+            themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
+          ]"
       />
     </div>
 

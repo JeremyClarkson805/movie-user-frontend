@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
+import ForgotPasswordModal from '../components/auth/ForgotPasswordModal.vue'
 
 const emit = defineEmits(['close', 'show-register'])
 const router = useRouter()
@@ -12,6 +13,7 @@ const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
+const showForgotPassword = ref(false)
 
 const handleSubmit = async () => {
   try {
@@ -35,16 +37,14 @@ const switchToRegister = () => {
 }
 
 const handleForgotPassword = () => {
-  emit('close')
-  router.push('/forgot-password')
+  showForgotPassword.value = true
 }
 
 const handleClose = () => {
-  authStore.resetState() // 关闭时重置状态
+  authStore.resetState()
   emit('close')
 }
 
-// 在组件卸载时重置表单和错误状态
 onUnmounted(() => {
   email.value = ''
   password.value = ''
@@ -71,6 +71,7 @@ onUnmounted(() => {
         <h1 class="text-2xl font-bold mb-6">登录</h1>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
+          <!-- Form fields remain unchanged -->
           <div>
             <label class="block text-sm font-medium mb-1">邮箱</label>
             <input
@@ -78,7 +79,7 @@ onUnmounted(() => {
                 type="email"
                 required
                 :class="[
-                'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ',
+                'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
               ]"
             />
@@ -126,5 +127,11 @@ onUnmounted(() => {
         </p>
       </div>
     </div>
+
+    <!-- Forgot Password Modal -->
+    <ForgotPasswordModal
+        :show="showForgotPassword"
+        @close="showForgotPassword = false"
+    />
   </div>
 </template>

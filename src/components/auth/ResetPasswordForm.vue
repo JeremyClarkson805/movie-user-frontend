@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useThemeStore } from '../../stores/theme'
-import { useResetPasswordStore } from '../../stores/resetPassword'
-import { validateEmail } from '../../utils/validators'
+import { useThemeStore } from '@/stores/theme'
+import { useResetPasswordStore } from '@/stores/resetPassword'
+import { validateEmail } from '@/utils/validators'
 import CountdownButton from './CountdownButton.vue'
 
 const themeStore = useThemeStore()
@@ -34,9 +34,9 @@ const handleVerifyCode = async () => {
             type="email"
             required
             :class="[
-            'flex-1 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-            themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
-          ]"
+              'flex-1 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+              themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
+            ]"
         />
         <CountdownButton
             :disabled="!isEmailValid"
@@ -53,9 +53,9 @@ const handleVerifyCode = async () => {
           type="text"
           required
           :class="[
-          'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-          themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
-        ]"
+            'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+            themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
+          ]"
       />
     </div>
 

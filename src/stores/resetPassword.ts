@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiService } from '../services/api'
+import { useRouter } from 'vue-router'
 
 export const useResetPasswordStore = defineStore('resetPassword', () => {
+    const router = useRouter()
     const isLoading = ref(false)
     const error = ref<string | null>(null)
     const isVerified = ref(false)
@@ -12,13 +14,8 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
         try {
             isLoading.value = true
             error.value = null
-
-            const response = await apiService.resetPassword.sendResetCode(email)
-            if (response.code === 200) {
-                return true
-            } else {
-                throw new Error(response.message || '发送验证码失败')
-            }
+            await apiService.resetPassword.sendResetCode(email)
+            return true
         } catch (err) {
             error.value = err instanceof Error ? err.message : '发送验证码失败'
             throw err
@@ -31,16 +28,11 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
         try {
             isLoading.value = true
             error.value = null
-
-            const response = await apiService.resetPassword.verifyCode(email, code)
-            if (response.code === 200) {
-                isVerified.value = true
-                verifiedEmail.value = email
-                localStorage.setItem("code", code)
-                return true
-            } else {
-                throw new Error(response.message || '验证码验证失败')
-            }
+            await apiService.resetPassword.verifyCode(email, code)
+            isVerified.value = true
+            verifiedEmail.value = email
+            localStorage.setItem('resetCode', code)
+            return true
         } catch (err) {
             error.value = err instanceof Error ? err.message : '验证码验证失败'
             throw err
@@ -53,18 +45,25 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
         try {
             isLoading.value = true
             error.value = null
-            var code = localStorage.getItem("code")
-
-            const response = await apiService.resetPassword.setNewPassword(verifiedEmail.value, newPassword, code)
-            if (response.code === 200) {
-                // 重置成功后清空状态
-                isVerified.value = false
-                verifiedEmail.value = ''
-                localStorage.removeItem("code")
-                return true
-            } else {
-                throw new Error(response.message || '重置密码失败')
+            const code = localStorage.getItem('resetCode')
+            
+            if (!code || !verifiedEmail.value) {
+                throw new Error('验证信息已过期，请重新验证')
             }
+
+            await apiService.resetPassword.setNewPassword(
+                verifiedEmail.value,
+                newPassword,
+                code
+            )
+
+            // 清理状态
+            $reset()
+            localStorage.removeItem('resetCode')
+            
+            // 跳转到登录页
+            router.push('/login')
+            return true
         } catch (err) {
             error.value = err instanceof Error ? err.message : '重置密码失败'
             throw err
@@ -73,12 +72,20 @@ export const useResetPasswordStore = defineStore('resetPassword', () => {
         }
     }
 
+    const $reset = () => {
+        isLoading.value = false
+        error.value = null
+        isVerified.value = false
+        verifiedEmail.value = ''
+    }
+
     return {
         isLoading,
         error,
         isVerified,
         sendVerificationCode,
         verifyCode,
-        resetPassword
+        resetPassword,
+        $reset
     }
 })
