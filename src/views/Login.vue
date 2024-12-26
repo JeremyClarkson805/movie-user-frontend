@@ -129,10 +129,10 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Forgot Password Modal -->
-    <ForgotPasswordModal
-        :show="showForgotPassword"
-        @close="showForgotPassword = false"
-    />
+<!--    &lt;!&ndash; Forgot Password Modal &ndash;&gt;-->
+<!--    <ForgotPasswordModal-->
+<!--        :show="showForgotPassword"-->
+<!--        @close="showForgotPassword = false"-->
+<!--    />-->
   </div>
 </template>

@@ -4,9 +4,15 @@ import { useThemeStore } from '../stores/theme'
 
 const themeStore = useThemeStore()
 
-const props = defineProps<{
+interface DebugItem {
+  name: string
+  value: string
+}
+
+defineProps<{
   title: string
   icon: string
+  items?: DebugItem[]
 }>()
 
 const status = ref<HTMLElement | null>(null)
@@ -46,5 +52,11 @@ onMounted(async () => {
       </div>
     </div>
     <div ref="status" class="font-mono pl-7"></div>
+    <div v-if="items" class="space-y-2 mt-4">
+      <div v-for="item in items" :key="item.name" class="flex justify-between">
+        <span class="text-sm text-gray-500">{{ item.name }}</span>
+        <span class="text-sm font-mono">{{ item.value }}</span>
+      </div>
+    </div>
   </div>
 </template>

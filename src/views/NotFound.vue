@@ -8,6 +8,8 @@ import DebugInfo from '../components/DebugInfo.vue'
 const router = useRouter()
 const themeStore = useThemeStore()
 const description = ref<HTMLElement | null>(null)
+const debugTitle = "调试信息"
+const debugIcon = "🔍"
 
 const debugItems = ref([
   { name: 'Request ID', value: crypto.randomUUID() },
@@ -120,7 +122,11 @@ onMounted(async () => {
           <span>🔍</span>
           <span>调试信息</span>
         </h3>
-        <DebugInfo :items="debugItems" />
+        <DebugInfo
+            :title="debugTitle"
+            :icon="debugIcon"
+            :items="debugItems"
+        />
       </div>
 
     </div>

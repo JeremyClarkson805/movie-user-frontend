@@ -33,7 +33,7 @@ const openMovieDetails = (movieId: number) => {
           :src="movie.posterUrl"
           :alt="movie.title"
           class="w-full h-full object-cover"
-          @error="$event.target.src = 'https://placehold.co/400x600/1f2937/ffffff?text=Movie+Poster'"
+          @error="($event.target as HTMLImageElement).src = 'https://placehold.co/400x600/1f2937/ffffff?text=Movie+Poster'"
       />
 
       <!-- Default Title (Visible when not hovering) -->

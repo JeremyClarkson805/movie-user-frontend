@@ -59,10 +59,11 @@ const isLoading = ref(true)
 const fetchMovieDetail = async (id: string | string[]) => {
   try {
     isLoading.value = true
-    const response = await apiService.movies.getDetail(id)
+    const movieId = Array.isArray(id) ? id[0] : id
+    const response = await apiService.movies.getDetail(movieId)
     movie.value = response.data
     document.title = `${movie.value.title} - 电影详情`
-    await fetchDownloadLinks(id)
+    await fetchDownloadLinks(movieId)
   } catch (error) {
     console.error('Failed to fetch movie details:', error)
     document.title = '电影详情'
@@ -155,7 +156,7 @@ onUnmounted(() => {
                     :src="movie.posterUrl"
                     :alt="movie.title"
                     class="w-full rounded-lg shadow-2xl"
-                    @error="$event.target.src = 'https://placehold.co/400x600/1f2937/ffffff?text=Movie+Poster'"
+                    @error="($event.target as HTMLImageElement).src = 'https://placehold.co/400x600/1f2937/ffffff?text=Movie+Poster'"
                 />
               </div>
 

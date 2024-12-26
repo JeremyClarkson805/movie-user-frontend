@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import fs from 'fs'
 import path from 'path'
+import type { ProxyOptions } from 'vite'
 
 export default defineConfig({
   plugins: [vue()],

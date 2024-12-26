@@ -38,6 +38,10 @@ const getErrorSolution = (statusCode?: number) => {
       return '您可以尝试刷新页面，如果问题持续存在，请联系客服'
   }
 }
+
+const refresh = () => {
+  window.location.reload()
+}
 </script>
 
 <template>
@@ -73,7 +77,7 @@ const getErrorSolution = (statusCode?: number) => {
               <ArrowPathIcon class="h-4 w-4 mr-2" />
               重试
             </button>
-            <button @click="() => window.location.reload()"
+            <button @click="refresh"
                     class="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors"
                     :class="themeStore.isDark
                       ? 'bg-gray-700 hover:bg-gray-600 text-white'

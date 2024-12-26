@@ -17,6 +17,7 @@ interface UserInfo {
   gender: number | null
   birthday: string | null
   lastLoginTime: string
+  registerTime: string | null
 }
 
 const userInfo = ref<UserInfo | null>(null)
