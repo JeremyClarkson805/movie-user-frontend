@@ -68,46 +68,38 @@ const fetchMovieDetail = async (id: string | string[]) => {
   try {
     isLoading.value = true
     error.value = ''
+    isContentProtected.value = true
 
     const movieId = Array.isArray(id) ? id[0] : id
 
-    // Load movie details with protection
-    const response = await loadWithProtection(
+    const [movieResponse, linksResponse] = await Promise.all([
+      loadWithProtection(
         () => apiService.movies.getDetail(movieId),
         { minDelay: 800, maxDelay: 2000 }
-    )
+      ),
+      loadWithProtection(
+        () => fetchDownloadLinks(movieId),
+        { minDelay: 800, maxDelay: 2000 }
+      )
+    ])
 
-    // Protect sensitive content
     movie.value = {
-      ...response.data,
-      intro: obfuscate(response.data.intro),
-      director: obfuscate(response.data.director),
-      writers: response.data.writers.map(w => ({ ...w, name: obfuscate(w.name) })),
-      actors: response.data.actors.map(a => ({ ...a, name: obfuscate(a.name) }))
+      ...movieResponse.data,
+      intro: deobfuscate(movieResponse.data.intro),
+      director: deobfuscate(movieResponse.data.director),
+      writers: movieResponse.data.writers.map(w => ({ 
+        ...w, 
+        name: deobfuscate(w.name) 
+      })),
+      actors: movieResponse.data.actors.map(a => ({ 
+        ...a, 
+        name: deobfuscate(a.name) 
+      }))
     }
 
     document.title = `${movie.value.title} - 电影详情`
-
-    // Load download links with different delay
-    await loadWithProtection(
-        () => fetchDownloadLinks(movieId),
-        { minDelay: 1000, maxDelay: 3000 }
-    )
-
-    // Reveal content gradually
-    setTimeout(() => {
-      movie.value.intro = deobfuscate(movie.value.intro)
-      movie.value.director = deobfuscate(movie.value.director)
-      movie.value.writers = movie.value.writers.map(w => ({
-        ...w,
-        name: deobfuscate(w.name)
-      }))
-      movie.value.actors = movie.value.actors.map(a => ({
-        ...a,
-        name: deobfuscate(a.name)
-      }))
-      isContentProtected.value = false
-    }, 1500)
+    
+    isContentProtected.value = false
 
   } catch (err) {
     console.error('Failed to fetch movie details:', err)
@@ -181,12 +173,6 @@ onUnmounted(() => {
       <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
     </div>
 
-    <!-- Content Protected State -->
-<!--    <div v-if="isContentProtected && !isLoading" class="animate-pulse">-->
-<!--      <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>-->
-<!--      <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>-->
-<!--    </div>-->
-
     <!-- Error State -->
     <div v-else-if="error"
          class="min-h-[60vh] flex items-center justify-center">
@@ -202,7 +188,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Content -->
-    <div v-else class="max-w-6xl mx-auto">
+    <div v-else-if="!isLoading && !isContentProtected" class="max-w-6xl mx-auto">
       <div :class="[
         'rounded-2xl overflow-hidden shadow-xl',
         themeStore.isDark ? 'bg-gray-800' : 'bg-white'
@@ -267,8 +253,10 @@ onUnmounted(() => {
           <!-- Synopsis -->
           <div>
             <h2 class="text-xl font-semibold mb-3">剧情简介</h2>
-            <div v-for="(chunk, index) in splitTextIntoChunks(movie.intro, 50)" :key="index" class="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-              <span :class="index % 2 === 0 ? 'even-chunk' : 'odd-chunk'">{{ chunk }}</span>
+            <div v-if="!isContentProtected" class="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+              <span v-for="(chunk, index) in splitTextIntoChunks(movie.intro, 50)" :key="index" :class="index % 2 === 0 ? 'even-chunk' : 'odd-chunk'">
+                {{ chunk }}
+              </span>
             </div>
           </div>
 

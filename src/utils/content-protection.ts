@@ -12,14 +12,14 @@ export const useContentProtection = () => {
             String.fromCharCode(parseInt(code, 10)))
     }
 
-    const addRandomDelay = async (min = 500, max = 2000): Promise<void> => {
+    const addRandomDelay = async (min = 200, max = 500): Promise<void> => {
         const delay = Math.random() * (max - min) + min
         await new Promise(resolve => setTimeout(resolve, delay))
     }
 
     const loadWithProtection = async <T>(
         loadFn: () => Promise<T>,
-        options = { minDelay: 500, maxDelay: 2000 }
+        options = { minDelay: 200, maxDelay: 500 }
     ): Promise<T> => {
         await addRandomDelay(options.minDelay, options.maxDelay)
         return loadFn()
