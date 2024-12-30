@@ -32,6 +32,11 @@ const createDevToolsDetector = () => {
     }
 }
 
+// 检测是否为移动设备
+const isMobileDevice = () => {
+    return /Mobi|Android/i.test(navigator.userAgent)
+}
+
 export const useAntiDebug = () => {
     let debuggerTimer: number
     let devToolsTimer: number
@@ -39,6 +44,9 @@ export const useAntiDebug = () => {
     const detectDevTools = createDevToolsDetector()
 
     onMounted(() => {
+        // 如果是移动设备，则不启用反爬措施
+        if (isMobileDevice()) return
+
         // Set up continuous monitoring
         debuggerTimer = window.setInterval(debuggerTrap, 500)
         devToolsTimer = window.setInterval(detectDevTools, 500)
