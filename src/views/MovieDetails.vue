@@ -1,13 +1,19 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import {ref, onMounted, onUnmounted} from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { apiService } from '../services/api'
 import MovieDownloads from '../components/MovieDownloads.vue'
+import { useAntiDebug } from '../utils/anti-debug'
+import { useContentProtection } from '../utils/content-protection'
 import { shuffleArray } from '../utils/shuffle'
 
 const route = useRoute()
 const themeStore = useThemeStore()
+const { obfuscate, deobfuscate, loadWithProtection } = useContentProtection()
+
+// Enable anti-debugging
+useAntiDebug()
 
 interface MovieDetail {
   movieId: number
@@ -56,17 +62,56 @@ const movie = ref<MovieDetail>({
 const downloadLinks = ref<DownloadLink[]>([])
 const error = ref('')
 const isLoading = ref(true)
+const isContentProtected = ref(true)
 
 const fetchMovieDetail = async (id: string | string[]) => {
   try {
     isLoading.value = true
+    error.value = ''
+
     const movieId = Array.isArray(id) ? id[0] : id
-    const response = await apiService.movies.getDetail(movieId)
-    movie.value = response.data
+
+    // Load movie details with protection
+    const response = await loadWithProtection(
+        () => apiService.movies.getDetail(movieId),
+        { minDelay: 800, maxDelay: 2000 }
+    )
+
+    // Protect sensitive content
+    movie.value = {
+      ...response.data,
+      intro: obfuscate(response.data.intro),
+      director: obfuscate(response.data.director),
+      writers: response.data.writers.map(w => ({ ...w, name: obfuscate(w.name) })),
+      actors: response.data.actors.map(a => ({ ...a, name: obfuscate(a.name) }))
+    }
+
     document.title = `${movie.value.title} - 电影详情`
-    await fetchDownloadLinks(movieId)
-  } catch (error) {
-    console.error('Failed to fetch movie details:', error)
+
+    // Load download links with different delay
+    await loadWithProtection(
+        () => fetchDownloadLinks(movieId),
+        { minDelay: 1000, maxDelay: 3000 }
+    )
+
+    // Reveal content gradually
+    setTimeout(() => {
+      movie.value.intro = deobfuscate(movie.value.intro)
+      movie.value.director = deobfuscate(movie.value.director)
+      movie.value.writers = movie.value.writers.map(w => ({
+        ...w,
+        name: deobfuscate(w.name)
+      }))
+      movie.value.actors = movie.value.actors.map(a => ({
+        ...a,
+        name: deobfuscate(a.name)
+      }))
+      isContentProtected.value = false
+    }, 1500)
+
+  } catch (err) {
+    console.error('Failed to fetch movie details:', err)
+    error.value = err instanceof Error ? err.message : '获取电影详情失败'
     document.title = '电影详情'
   } finally {
     isLoading.value = false
@@ -121,7 +166,6 @@ onMounted(() => {
   if (route.params.id) {
     fetchMovieDetail(route.params.id)
   }
-  detectDebugger()
 })
 
 onUnmounted(() => {
@@ -136,6 +180,12 @@ onUnmounted(() => {
          class="min-h-[60vh] flex items-center justify-center">
       <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
     </div>
+
+    <!-- Content Protected State -->
+<!--    <div v-if="isContentProtected && !isLoading" class="animate-pulse">-->
+<!--      <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>-->
+<!--      <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>-->
+<!--    </div>-->
 
     <!-- Error State -->
     <div v-else-if="error"
