@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { apiService } from '../services/api'
 import MovieDownloads from '../components/MovieDownloads.vue'
+import { shuffleArray } from '../utils/shuffle'
 
 const route = useRoute()
 const themeStore = useThemeStore()
@@ -97,10 +98,30 @@ const fetchDownloadLinks = async (movieId: string | string[]) => {
   }
 }
 
+const splitTextIntoChunks = (text: string, chunkSize: number) => {
+  const chunks = [];
+  for (let i = 0; i < text.length; i += chunkSize) {
+    chunks.push(text.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+const detectDebugger = () => {
+  const checkDebugger = () => {
+    if (window.outerHeight - window.innerHeight > 100 || window.outerWidth - window.innerWidth > 100) {
+      alert('检测到调试器，请关闭开发者工具后重试。');
+      window.location.reload();
+    }
+  };
+
+  setInterval(checkDebugger, 1000);
+};
+
 onMounted(() => {
   if (route.params.id) {
     fetchMovieDetail(route.params.id)
   }
+  detectDebugger()
 })
 
 onUnmounted(() => {
@@ -175,7 +196,7 @@ onUnmounted(() => {
 
                 <!-- Categories -->
                 <div class="flex flex-wrap gap-2">
-                  <span v-for="category in movie.categories"
+                  <span v-for="category in shuffleArray(movie.categories)"
                         :key="category"
                         :class="[
                           'px-3 py-1 rounded-full text-sm font-medium transition-colors',
@@ -196,9 +217,9 @@ onUnmounted(() => {
           <!-- Synopsis -->
           <div>
             <h2 class="text-xl font-semibold mb-3">剧情简介</h2>
-            <p class="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-              {{ movie.intro }}
-            </p>
+            <div v-for="(chunk, index) in splitTextIntoChunks(movie.intro, 50)" :key="index" class="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+              <span :class="index % 2 === 0 ? 'even-chunk' : 'odd-chunk'">{{ chunk }}</span>
+            </div>
           </div>
 
           <!-- Cast & Crew -->
@@ -213,7 +234,7 @@ onUnmounted(() => {
             <div>
               <h2 class="text-xl font-semibold mb-3">编剧</h2>
               <div class="space-y-2">
-                <p v-for="writer in movie.writers"
+                <p v-for="writer in shuffleArray(movie.writers)"
                    :key="writer.id"
                    class="text-gray-600 dark:text-gray-300">
                   {{ writer.name }}
@@ -226,7 +247,7 @@ onUnmounted(() => {
           <div>
             <h2 class="text-xl font-semibold mb-3">演员表</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div v-for="actor in movie.actors"
+              <div v-for="actor in shuffleArray(movie.actors)"
                    :key="actor.id"
                    class="text-gray-600 dark:text-gray-300">
                 {{ actor.name }}
@@ -244,3 +265,36 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.even-chunk {
+  /* 隐式样式策略 */
+  color: inherit;
+  background: linear-gradient(to right, transparent 50%, rgba(255, 255, 255, 0.1) 50%);
+  background-size: 200% 100%;
+  background-position: 100%;
+  transition: background-position 0.5s;
+}
+
+.odd-chunk {
+  /* 隐式样式策略 */
+  color: inherit;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.1) 50%, transparent 50%);
+  background-size: 200% 100%;
+  background-position: 0%;
+  transition: background-position 0.5s;
+}
+
+.even-chunk:hover, .odd-chunk:hover {
+  background-position: 0%;
+}
+
+/* 黑暗模式适配 */
+.dark .even-chunk {
+  background: linear-gradient(to right, transparent 50%, rgba(0, 0, 0, 0.1) 50%);
+}
+
+.dark .odd-chunk {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.1) 50%, transparent 50%);
+}
+</style>
