@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
+import type { AxiosInstance, AxiosRequestConfig, AxiosError, AxiosResponse } from 'axios'
 import { API_CONFIG } from '../config/api'
 import { useGuestStore } from '../stores/guest'
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
@@ -136,6 +136,28 @@ interface VerifyCodeData {
     code: string
 }
 
+interface MovieDetail {
+    movieId: number;
+    title: string;
+    releaseYear: number;
+    duration: string;
+    rating: number;
+    director: string;
+    writers: Array<{ id: number; name: string }>;
+    actors: Array<{ id: number; name: string }>;
+    categories: string[];
+    posterUrl: string;
+    country: string;
+    createTime: string;
+    intro: string;
+}
+
+interface MovieResponse {
+    data: MovieDetail | null;
+    code: number;
+    message: string;
+}
+
 // API service
 export const apiService = {
     // Movie related APIs
@@ -143,8 +165,22 @@ export const apiService = {
         getList: (params: MovieListParams = {}) =>
             apiClient.get('/api/movie/list', { params }),
 
-        getDetail: (id: string | number) =>
-            apiClient.get('/api/movie/detail', { params: { id } })
+        getDetail: async (id: string | number): Promise<MovieResponse> => {
+            try {
+                const response: AxiosResponse = await apiClient.get('/api/movie/detail', { params: { id } });
+                return {
+                    data: response.data, // 确保 data 是 MovieDetail 类型
+                    code: response.status,
+                    message: response.statusText
+                };
+            } catch (error) {
+                return {
+                    data: null,
+                    code: 500,
+                    message: '获取电影详情失败'
+                };
+            }
+        }
     },
 
     // Auth related APIs

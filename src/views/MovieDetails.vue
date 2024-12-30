@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, onMounted, onUnmounted} from 'vue'
+import {ref, onMounted, onUnmounted, watch} from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { apiService } from '../services/api'
@@ -43,6 +43,19 @@ interface DownloadLink {
   updatedAt: string | null
 }
 
+// 添加响应类型定义
+interface MovieResponse {
+  data: MovieDetail | null;
+  code: number;
+  message: string;
+}
+
+interface LinksResponse {
+  data: DownloadLink[];
+  code: number;
+  message: string;
+}
+
 const movie = ref<MovieDetail>({
   movieId: 0,
   title: '',
@@ -71,46 +84,58 @@ const fetchMovieDetail = async (id: string | string[]) => {
     isContentProtected.value = true
 
     const movieId = Array.isArray(id) ? id[0] : id
+    
+    const timeout = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('请求超时')), 10000)
+    )
 
-    const [movieResponse, linksResponse] = await Promise.all([
-      loadWithProtection(
-        () => apiService.movies.getDetail(movieId),
-        { minDelay: 800, maxDelay: 2000 }
-      ),
-      loadWithProtection(
-        () => fetchDownloadLinks(movieId),
-        { minDelay: 800, maxDelay: 2000 }
-      )
+    // 明确指定 Promise.race 的类型
+    const [movieResponse, linksResponse] = await Promise.race<[MovieResponse, LinksResponse]>([
+      Promise.all([
+        loadWithProtection<MovieResponse>(
+          () => apiService.movies.getDetail(movieId),
+          { minDelay: 300, maxDelay: 1000 }
+        ),
+        loadWithProtection<LinksResponse>(
+          () => fetchDownloadLinks(movieId),
+          { minDelay: 300, maxDelay: 1000 }
+        )
+      ]),
+      timeout
     ])
+
+    if (!movieResponse?.data) {
+      throw new Error('未获取到电影数据')
+    }
 
     movie.value = {
       ...movieResponse.data,
-      intro: deobfuscate(movieResponse.data.intro),
-      director: deobfuscate(movieResponse.data.director),
-      writers: movieResponse.data.writers.map(w => ({ 
+      intro: movieResponse.data.intro ? deobfuscate(movieResponse.data.intro) : '',
+      director: movieResponse.data.director ? deobfuscate(movieResponse.data.director) : '',
+      writers: (movieResponse.data.writers || []).map(w => ({ 
         ...w, 
         name: deobfuscate(w.name) 
       })),
-      actors: movieResponse.data.actors.map(a => ({ 
+      actors: (movieResponse.data.actors || []).map(a => ({ 
         ...a, 
         name: deobfuscate(a.name) 
       }))
     }
 
-    document.title = `${movie.value.title} - 电影详情`
-    
+    document.title = `${movie.value.title || '电影'} - 电影详情`
     isContentProtected.value = false
 
   } catch (err) {
     console.error('Failed to fetch movie details:', err)
     error.value = err instanceof Error ? err.message : '获取电影详情失败'
     document.title = '电影详情'
+    isContentProtected.value = false // 确保错误时也重置保护状态
   } finally {
     isLoading.value = false
   }
 }
 
-const fetchDownloadLinks = async (movieId: string | string[]) => {
+const fetchDownloadLinks = async (movieId: string | string[]): Promise<LinksResponse> => {
   try {
     const formData = new FormData()
     formData.append('id', movieId.toString())
@@ -120,18 +145,30 @@ const fetchDownloadLinks = async (movieId: string | string[]) => {
       headers: {
         'Authorization': localStorage.getItem('userToken') || localStorage.getItem('guestToken') || ''
       },
-      body: formData
+      body: formData,
+      signal: AbortSignal.timeout(5000)
     })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
 
     const data = await response.json()
     if (data.code === 200) {
-      downloadLinks.value = data.data
+      downloadLinks.value = data.data || []
+      return { data: data.data, code: data.code, message: data.message }
     } else {
-      error.value = data.message || '获取下载链接失败'
+      throw new Error(data.message || '获取下载链接失败')
     }
   } catch (err) {
     console.error('Failed to fetch download links:', err)
-    error.value = '获取下载链接失败'
+    if (err instanceof Error) {
+      error.value = err.message
+    } else {
+      error.value = '获取下载链接失败'
+    }
+    downloadLinks.value = [] // 确保在错误时清空下载链接
+    return { data: [], code: 500, message: error.value }
   }
 }
 
@@ -154,23 +191,35 @@ const detectDebugger = () => {
   setInterval(checkDebugger, 1000);
 };
 
+// 添加路由监听，处理路由参数变化
+watch(() => route.params.id, (newId) => {
+  if (newId) {
+    fetchMovieDetail(newId)
+  }
+})
+
 onMounted(() => {
   if (route.params.id) {
     fetchMovieDetail(route.params.id)
+  } else {
+    error.value = '未找到电影ID'
+    isLoading.value = false
   }
 })
 
 onUnmounted(() => {
-  document.title = '电影网站'
+  document.title = '4KMovieHub'
 })
 </script>
 
 <template>
   <div class="pt-20 px-4 md:px-6 lg:px-8">
     <!-- Loading State -->
-    <div v-if="isLoading"
-         class="min-h-[60vh] flex items-center justify-center">
-      <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+    <div v-if="isLoading" class="min-h-[60vh] flex items-center justify-center">
+      <div class="text-center">
+        <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mb-4"></div>
+        <p class="text-gray-500">加载中...</p>
+      </div>
     </div>
 
     <!-- Error State -->
@@ -232,7 +281,7 @@ onUnmounted(() => {
 
                 <!-- Categories -->
                 <div class="flex flex-wrap gap-2">
-                  <span v-for="category in shuffleArray(movie.categories)"
+                  <span v-for="category in shuffleArray(movie.categories || [])"
                         :key="category"
                         :class="[
                           'px-3 py-1 rounded-full text-sm font-medium transition-colors',

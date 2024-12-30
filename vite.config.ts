@@ -20,7 +20,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://192.168.50.6',
+        target: 'http://8.217.248.157:8080',
         changeOrigin: true,
         headers: {
           'X-Forwarded-For': '',
