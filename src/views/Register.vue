@@ -3,11 +3,13 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
+import { useModalStore } from '../stores/modalStore'
 
 const emit = defineEmits(['close', 'show-login'])
 const router = useRouter()
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
+const modalStore = useModalStore()
 
 const username = ref('')
 const email = ref('')
@@ -296,12 +298,17 @@ const handleShowLogin = () => {
           </button>
         </form>
 
-        <p class="mt-4 text-sm text-center">
-          已有账号？
-          <button @click="handleShowLogin" class="text-blue-500 hover:underline">
+        <div class="text-center mt-4">
+          <span :class="themeStore.isDark ? 'text-gray-400' : 'text-gray-600'">
+            已有账号？
+          </span>
+          <button 
+            @click="modalStore.openLogin()"
+            class="text-blue-500 hover:text-blue-600 font-medium ml-1"
+          >
             点此登录
           </button>
-        </p>
+        </div>
       </div>
     </div>
   </div>

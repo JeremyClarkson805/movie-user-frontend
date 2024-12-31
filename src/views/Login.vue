@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
@@ -14,6 +14,8 @@ const modalStore = useModalStore()
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
+const emailInput = ref<HTMLInputElement | null>(null)
+const passwordInput = ref<HTMLInputElement | null>(null)
 
 const handleSubmit = async () => {
   try {
@@ -44,6 +46,12 @@ const handleClose = () => {
   modalStore.closeModal()
 }
 
+onMounted(() => {
+  nextTick(() => {
+    emailInput.value?.focus()
+  })
+})
+
 onUnmounted(() => {
   email.value = ''
   password.value = ''
@@ -69,8 +77,7 @@ onUnmounted(() => {
 
         <h1 class="text-2xl font-bold mb-6">登录</h1>
 
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Form fields remain unchanged -->
+        <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium mb-1">邮箱</label>
             <input
@@ -81,6 +88,8 @@ onUnmounted(() => {
                 'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
               ]"
+                @keyup.enter="$refs.passwordInput?.focus()"
+                ref="emailInput"
             />
           </div>
 
@@ -94,11 +103,14 @@ onUnmounted(() => {
                 'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
               ]"
+                @keyup.enter="handleSubmit"
+                ref="passwordInput"
             />
           </div>
 
           <div class="flex justify-end">
             <button
+                type="button"
                 @click="handleForgotPassword"
                 class="text-sm text-blue-500 hover:underline"
             >
@@ -109,13 +121,14 @@ onUnmounted(() => {
           <div v-if="authStore.error" class="text-red-500 text-sm">{{ authStore.error }}</div>
 
           <button
-              type="submit"
+              type="button"
+              @click="handleSubmit"
               :disabled="isLoading"
               class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ isLoading ? '登录中...' : '登录' }}
           </button>
-        </form>
+        </div>
 
         <p class="mt-4 text-sm text-center">
           还没有账户?
@@ -128,11 +141,5 @@ onUnmounted(() => {
         </p>
       </div>
     </div>
-
-<!--    &lt;!&ndash; Forgot Password Modal &ndash;&gt;-->
-<!--    <ForgotPasswordModal-->
-<!--        :show="showForgotPassword"-->
-<!--        @close="showForgotPassword = false"-->
-<!--    />-->
   </div>
 </template>
