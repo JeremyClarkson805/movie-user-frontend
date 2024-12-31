@@ -18,6 +18,8 @@
               placeholder="请输入验证码"
               class="w-full px-4 py-2 rounded-lg"
               :class="themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'"
+              @keyup.enter="verify"
+              ref="captchaInput"
           />
         </div>
 
@@ -46,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useThemeStore } from '../stores/theme'
 
 const themeStore = useThemeStore()
@@ -62,6 +64,15 @@ const emit = defineEmits<{
 const captcha = ref(generateCaptcha())
 const userInput = ref('')
 const error = ref('')
+const captchaInput = ref<HTMLInputElement | null>(null)
+
+onMounted(() => {
+  nextTick(() => {
+    if (captchaInput.value) {
+      captchaInput.value.focus()
+    }
+  })
+})
 
 function generateCaptcha(length = 4): string {
   const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -75,6 +86,11 @@ function regenerateCaptcha() {
   captcha.value = generateCaptcha()
   userInput.value = ''
   error.value = ''
+  nextTick(() => {
+    if (captchaInput.value) {
+      captchaInput.value.focus()
+    }
+  })
 }
 
 function verify() {
