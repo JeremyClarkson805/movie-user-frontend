@@ -7,13 +7,37 @@ import MovieDownloads from '../components/MovieDownloads.vue'
 import { useAntiDebug } from '../utils/anti-debug'
 import { useContentProtection } from '../utils/content-protection'
 import { shuffleArray } from '../utils/shuffle'
+import { useVisitTrackerStore } from '../stores/visitTracker'
+import CaptchaModal from '../components/CaptchaModal.vue'
 
 const route = useRoute()
 const themeStore = useThemeStore()
 const { obfuscate, deobfuscate, loadWithProtection } = useContentProtection()
+const visitTracker = useVisitTrackerStore()
+const showCaptcha = ref(visitTracker.needsCaptcha())
+const isContentLocked = ref(visitTracker.needsCaptcha())
 
 // Enable anti-debugging
 useAntiDebug()
+
+const handleCaptchaVerified = async () => {
+  showCaptcha.value = false
+  isContentLocked.value = false
+  visitTracker.incrementVisit()
+
+  // 验证成功后立即加载内容
+  if (route.params.id) {
+    try {
+      isLoading.value = true
+      await fetchMovieDetail(route.params.id)
+    } catch (err) {
+      console.error('Failed to load movie details:', err)
+      error.value = err instanceof Error ? err.message : '加载失败'
+    } finally {
+      isLoading.value = false
+    }
+  }
+}
 
 interface MovieDetail {
   movieId: number
@@ -198,9 +222,20 @@ watch(() => route.params.id, (newId) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
   if (route.params.id) {
-    fetchMovieDetail(route.params.id)
+    if (!isContentLocked.value) {
+      try {
+        isLoading.value = true
+        await fetchMovieDetail(route.params.id)
+        visitTracker.incrementVisit()
+      } catch (err) {
+        console.error('Failed to load movie details:', err)
+        error.value = err instanceof Error ? err.message : '加载失败'
+      } finally {
+        isLoading.value = false
+      }
+    }
   } else {
     error.value = '未找到电影ID'
     isLoading.value = false
@@ -223,8 +258,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error"
-         class="min-h-[60vh] flex items-center justify-center">
+    <div v-else-if="error" class="min-h-[60vh] flex items-center justify-center">
       <div class="text-center">
         <p class="text-red-500 text-xl mb-4">{{ error }}</p>
         <button
@@ -237,7 +271,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Content -->
-    <div v-else-if="!isLoading && !isContentProtected" class="max-w-6xl mx-auto">
+    <div v-else-if="!isLoading && !isContentLocked" class="max-w-6xl mx-auto">
       <div :class="[
         'rounded-2xl overflow-hidden shadow-xl',
         themeStore.isDark ? 'bg-gray-800' : 'bg-white'
@@ -351,6 +385,12 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
+  <CaptchaModal
+      v-if="showCaptcha"
+      :show="showCaptcha"
+      @verified="handleCaptchaVerified"
+      @error="error = '验证失败，请重试'"
+  />
 </template>
 
 <style scoped>
