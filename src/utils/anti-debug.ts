@@ -27,6 +27,7 @@ const createDevToolsDetector = () => {
         const isDevToolsOpen = widthThreshold || heightThreshold
 
         if (isDevToolsOpen) {
+            debugger
             window.location.href = '/'
         }
     }
