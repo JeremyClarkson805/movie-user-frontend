@@ -112,9 +112,9 @@ watch(() => route.query.q, (newQuery) => {
           'text-center py-12 rounded-lg',
           themeStore.isDark ? 'bg-gray-800' : 'bg-gray-100'
         ]">
-        <p class="text-xl">No movies found matching your search.</p>
+        <p class="text-xl">暂时没有符合条件的内容</p>
         <p class="mt-2" :class="themeStore.isDark ? 'text-gray-400' : 'text-gray-600'">
-          Try different keywords or check the spelling.
+          您可以尝试使用不同的关键词重新搜索
         </p>
       </div>
 
