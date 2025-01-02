@@ -1,4 +1,4 @@
-<<script setup lang="ts">
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
@@ -30,6 +30,8 @@ const lastScrollPosition = ref(0)
 
 const handleSearch = () => {
   router.push(`/search?q=${searchQuery.value}`)
+  // 搜索后收起移动端菜单
+  showMobileMenu.value = false
 }
 
 const handleScroll = () => {
@@ -77,7 +79,6 @@ const handleShowLogin = () => {
 const handleShowRegister = () => {
   modalStore.openRegister()
 }
-
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
