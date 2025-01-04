@@ -29,7 +29,37 @@ const getFileTypeLabel = (type: string) => {
   }
 }
 
-const copyToClipboard = async (link: typeof props.links[0]) => {
+const handleLinkClick = async (link: typeof props.links[0]) => {
+  // 网盘类型的链接直接打开新窗口
+  if (['aliyun', 'baidu', 'quark'].includes(link.fileType)) {
+    window.open(link.downloadUrl, '_blank')
+    return
+  }
+  
+  // 磁力链接尝试调用下载器
+  if (link.fileType === 'magnet') {
+    try {
+      // 创建一个隐藏的 a 标签
+      const a = document.createElement('a')
+      a.href = link.downloadUrl
+      a.style.display = 'none'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      
+      // 同时也复制到剪贴板作为备份
+      await navigator.clipboard.writeText(link.downloadUrl)
+      copyStatus.value[link.id] = true
+      setTimeout(() => {
+        copyStatus.value[link.id] = false
+      }, 2000)
+    } catch (err) {
+      console.error('Failed to handle magnet link:', err)
+    }
+    return
+  }
+  
+  // 其他类型的链接复制到剪贴板
   try {
     await navigator.clipboard.writeText(link.downloadUrl)
     copyStatus.value[link.id] = true
@@ -51,7 +81,7 @@ const copyToClipboard = async (link: typeof props.links[0]) => {
            class="relative overflow-hidden rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <button
             class="w-full text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-            @click="copyToClipboard(link)"
+            @click="handleLinkClick(link)"
         >
           <div class="flex items-center p-4">
             <span :class="[
