@@ -101,6 +101,88 @@ const error = ref('')
 const isLoading = ref(true)
 const isContentProtected = ref(true)
 
+// 更新 document title 的函数
+const updateDocumentTitle = (movieTitle: string) => {
+  // 更新页面标题
+  document.title = movieTitle ? `MovieHub | ${movieTitle}` : 'MovieHub'
+
+  // 更新基础 meta description
+  let metaDescription = document.querySelector('meta[name="description"]')
+  if (!metaDescription) {
+    metaDescription = document.createElement('meta')
+    metaDescription.setAttribute('name', 'description')
+    document.head.appendChild(metaDescription)
+  }
+  metaDescription.setAttribute('content', movie.value.intro || '暂无简介')
+
+  // 更新 Open Graph 元数据
+  const ogTags = {
+    'og:title': `${movieTitle} - MovieHub`,
+    'og:description': movie.value.intro || '暂无简介',
+    'og:image': movie.value.posterUrl,
+    'og:url': window.location.href,
+    'og:type': 'website',
+    'og:site_name': 'MovieHub'
+  }
+
+  // 更新 Twitter Card 元数据
+  const twitterTags = {
+    'twitter:card': 'summary_large_image',
+    'twitter:title': `${movieTitle} - MovieHub`,
+    'twitter:description': movie.value.intro || '暂无简介',
+    'twitter:image': movie.value.posterUrl
+  }
+
+  // 辅助函数：更新或创建 meta 标签
+  const updateMetaTag = (name: string, content: string, property = false) => {
+    let meta = document.querySelector(property ? `meta[property="${name}"]` : `meta[name="${name}"]`)
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.setAttribute(property ? 'property' : 'name', name)
+      document.head.appendChild(meta)
+    }
+    meta.setAttribute('content', content)
+  }
+
+  // 更新所有 Open Graph 标签
+  Object.entries(ogTags).forEach(([name, content]) => {
+    updateMetaTag(name, content, true)
+  })
+
+  // 更新所有 Twitter Card 标签
+  Object.entries(twitterTags).forEach(([name, content]) => {
+    updateMetaTag(name, content)
+  })
+
+  // 添加结构化数据
+  const movieSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Movie',
+    'name': movieTitle,
+    'description': movie.value.intro,
+    'image': movie.value.posterUrl,
+    'datePublished': movie.value.createTime,
+    'director': {
+      '@type': 'Person',
+      'name': movie.value.director
+    },
+    'actor': movie.value.actors.map((actor: { name: string }) => ({
+      '@type': 'Person',
+      'name': actor.name
+    })),
+    'genre': movie.value.categories
+  }
+
+  // 更新或创建结构化数据脚本标签
+  let scriptTag = document.querySelector('script[type="application/ld+json"]')
+  if (!scriptTag) {
+    scriptTag = document.createElement('script')
+    scriptTag.setAttribute('type', 'application/ld+json')
+    document.head.appendChild(scriptTag)
+  }
+  scriptTag.textContent = JSON.stringify(movieSchema)
+}
+
 const fetchMovieDetail = async (id: string | string[]) => {
   try {
     isLoading.value = true
@@ -108,21 +190,20 @@ const fetchMovieDetail = async (id: string | string[]) => {
     isContentProtected.value = true
 
     const movieId = Array.isArray(id) ? id[0] : id
-    
-    const timeout = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('请求超时')), 10000)
+
+    const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('请求超时')), 10000)
     )
 
-    // 明确指定 Promise.race 的类型
     const [movieResponse, linksResponse] = await Promise.race<[MovieResponse, LinksResponse]>([
       Promise.all([
         loadWithProtection<MovieResponse>(
-          () => apiService.movies.getDetail(movieId),
-          { minDelay: 300, maxDelay: 1000 }
+            () => apiService.movies.getDetail(movieId),
+            { minDelay: 300, maxDelay: 1000 }
         ),
         loadWithProtection<LinksResponse>(
-          () => fetchDownloadLinks(movieId),
-          { minDelay: 300, maxDelay: 1000 }
+            () => fetchDownloadLinks(movieId),
+            { minDelay: 300, maxDelay: 1000 }
         )
       ]),
       timeout
@@ -136,24 +217,25 @@ const fetchMovieDetail = async (id: string | string[]) => {
       ...movieResponse.data,
       intro: movieResponse.data.intro ? deobfuscate(movieResponse.data.intro) : '',
       director: movieResponse.data.director ? deobfuscate(movieResponse.data.director) : '',
-      writers: (movieResponse.data.writers || []).map(w => ({ 
-        ...w, 
-        name: deobfuscate(w.name) 
+      writers: (movieResponse.data.writers || []).map(w => ({
+        ...w,
+        name: deobfuscate(w.name)
       })),
-      actors: (movieResponse.data.actors || []).map(a => ({ 
-        ...a, 
-        name: deobfuscate(a.name) 
+      actors: (movieResponse.data.actors || []).map(a => ({
+        ...a,
+        name: deobfuscate(a.name)
       }))
     }
 
-    document.title = `${movie.value.title || '电影'} - 电影详情`
+    // 更新页面标题和描述
+    updateDocumentTitle(movie.value.title)
     isContentProtected.value = false
 
   } catch (err) {
     console.error('Failed to fetch movie details:', err)
     error.value = err instanceof Error ? err.message : '获取电影详情失败'
-    document.title = '电影详情'
-    isContentProtected.value = false // 确保错误时也重置保护状态
+    updateDocumentTitle('') // 发生错误时重置标题
+    isContentProtected.value = false
   } finally {
     isLoading.value = false
   }
@@ -243,7 +325,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  document.title = '4KMovieHub'
+  // document.title = '4KMovieHub'
+  updateDocumentTitle('')
 })
 </script>
 
