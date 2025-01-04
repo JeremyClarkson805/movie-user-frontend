@@ -7,9 +7,9 @@ async function getGuestToken() {
     try {
         // 获取访客token
         const guestResponse = await axios.post('/api/user/guest', {
-            fingerprint: '75c2b6acab26da4a59d4c35e63266423',
+            fingerprint: '0595830ba182231e85ac0989e3fdedde',
             userAgent: 'Mozilla/5.0 SitemapGenerator',
-            ip: '127.0.0.1'
+            ip: '123.123.123.123'
         })
 
         if (guestResponse.data.code === 200) {
@@ -85,7 +85,7 @@ async function generateSitemap() {
 }
 
 // 设置axios默认配置
-axios.defaults.baseURL = 'http://localhost:8080'
+axios.defaults.baseURL = 'http://8.217.248.157:8080'
 axios.defaults.headers.common['Accept'] = 'application/json'
 axios.defaults.headers.post['Content-Type'] = 'application/json'
 

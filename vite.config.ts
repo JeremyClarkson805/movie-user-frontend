@@ -1,11 +1,31 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import path from 'node:path'
 import type { ProxyOptions } from 'vite'
+import { seoConfig } from './src/utils/seo/config'
+import { generateRobotsTxt } from './src/utils/seo/robots'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    {
+      name: 'generate-robots-txt',
+      // 在构建完成后执行
+      closeBundle() {
+        try {
+          // Generate robots.txt content
+          const robotsTxt = generateRobotsTxt(seoConfig.robots)
+
+          // Write to dist folder
+          fs.writeFileSync('dist/robots.txt', robotsTxt)
+          console.log('✓ Generated robots.txt')
+        } catch (error) {
+          console.error('Failed to generate robots.txt:', error)
+        }
+      }
+    }
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
@@ -20,7 +40,8 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        // target: 'http://localhost:8080',
+        target: 'http://4kmoviehub.com:8080',
         changeOrigin: true,
         headers: {
           'X-Forwarded-For': '',
@@ -28,10 +49,10 @@ export default defineConfig({
         },
         configure: (proxy, options) => {
           proxy.on('proxyReq', (proxyReq, req) => {
-            const clientIp = req.socket.remoteAddress || 'unknown';
-            proxyReq.setHeader('X-Forwarded-For', clientIp);
-            proxyReq.setHeader('X-Real-IP', clientIp);
-          });
+            const clientIp = req.socket.remoteAddress || 'unknown'
+            proxyReq.setHeader('X-Forwarded-For', clientIp)
+            proxyReq.setHeader('X-Real-IP', clientIp)
+          })
         },
         rewrite: (path) => path
       },
