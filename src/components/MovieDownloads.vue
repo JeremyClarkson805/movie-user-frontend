@@ -29,6 +29,11 @@ const getFileTypeLabel = (type: string) => {
   }
 }
 
+// 添加设备检测函数
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+}
+
 const handleLinkClick = async (link: typeof props.links[0]) => {
   // 网盘类型的链接直接打开新窗口
   if (['aliyun', 'baidu', 'quark'].includes(link.fileType)) {
@@ -36,18 +41,20 @@ const handleLinkClick = async (link: typeof props.links[0]) => {
     return
   }
   
-  // 磁力链接尝试调用下载器
+  // 磁力链接处理
   if (link.fileType === 'magnet') {
     try {
-      // 创建一个隐藏的 a 标签
-      const a = document.createElement('a')
-      a.href = link.downloadUrl
-      a.style.display = 'none'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      // 在桌面端才尝试调用下载器
+      if (!isMobileDevice()) {
+        const a = document.createElement('a')
+        a.href = link.downloadUrl
+        a.style.display = 'none'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      }
       
-      // 同时也复制到剪贴板作为备份
+      // 无论是移动端还是桌面端都复制到剪贴板
       await navigator.clipboard.writeText(link.downloadUrl)
       copyStatus.value[link.id] = true
       setTimeout(() => {
