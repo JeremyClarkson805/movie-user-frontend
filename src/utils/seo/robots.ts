@@ -6,6 +6,9 @@ export function generateRobotsTxt(config: RobotsConfig): string {
     // User-agent
     lines.push(`User-agent: ${config.userAgent}`)
 
+    // Allow API endpoint explicitly
+    lines.push('Allow: /api/user/guest')
+
     // Allow rules
     config.allow.forEach(rule => {
         lines.push(`Allow: ${rule}`)
