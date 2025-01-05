@@ -162,10 +162,16 @@ onUnmounted(() => {
             <button
                 id="user-menu-button"
                 @click="toggleUserMenu"
-                class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                class="w-10 h-10 rounded-full flex items-center justify-center transition-colors overflow-hidden"
                 :class="themeStore.isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'"
             >
-              <span class="text-xl">👤</span>
+              <img
+                  v-if="authStore.userInfo?.avatarUrl"
+                  :src="authStore.userInfo.avatarUrl"
+                  :alt="authStore.userInfo?.username"
+                  class="w-full h-full object-cover"
+              />
+              <span v-else class="text-xl">👤</span>
             </button>
 
             <!-- Dropdown Menu -->
