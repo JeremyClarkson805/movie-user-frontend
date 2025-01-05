@@ -29,9 +29,12 @@ const isNavVisible = ref(true)
 const lastScrollPosition = ref(0)
 
 const handleSearch = () => {
+  if (!searchQuery.value.trim()) return
   router.push(`/search?q=${searchQuery.value}`)
   // 搜索后收起移动端菜单
   showMobileMenu.value = false
+  // 让输入框失去焦点
+  document.activeElement instanceof HTMLElement && document.activeElement.blur()
 }
 
 const handleScroll = () => {
@@ -81,10 +84,16 @@ const handleShowRegister = () => {
 }
 
 const handleFocus = () => {
-  // 当搜索框获得焦点时清空搜索内容
-  searchQuery.value = ''
+  // 移除自动清空搜索内容的逻辑
   showResults.value = false // 隐藏之前的搜索结果
   searchResults.value = [] // 清空搜索结果数组
+}
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Backspace') { // 改为监听退格键
+    event.preventDefault() // 阻止退格键的默认行为
+    searchQuery.value = '' // 清空搜索内容
+  }
 }
 
 onMounted(() => {
@@ -145,6 +154,7 @@ onUnmounted(() => {
             <input
                 v-model="searchQuery"
                 @keyup.enter="handleSearch"
+                @keydown="handleKeydown"
                 type="text"
                 placeholder="搜索电影..."
                 @focus="handleFocus"
@@ -255,6 +265,7 @@ onUnmounted(() => {
         <input
             v-model="searchQuery"
             @keyup.enter="handleSearch"
+            @keydown="handleKeydown"
             type="text"
             placeholder="搜索电影..."
             class="w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
