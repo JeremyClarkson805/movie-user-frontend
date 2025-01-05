@@ -10,17 +10,17 @@ const router = useRouter()
 const planDetails = {
   monthly: {
     name: '月度会员',
-    price: '29.99',
+    price: '4.99',
     duration: '每月'
   },
   yearly: {
     name: '年度会员',
-    price: '299.99',
+    price: '49.99',
     duration: '每年'
   },
   lifetime: {
     name: '终身会员',
-    price: '1999.99',
+    price: '199.99',
     duration: '一次性付费'
   }
 }
