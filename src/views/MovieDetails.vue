@@ -25,7 +25,6 @@ const handleCaptchaVerified = async () => {
   isContentLocked.value = false
   visitTracker.incrementVisit()
 
-  // 验证成功后立即加载内容
   if (route.params.id) {
     try {
       isLoading.value = true
@@ -67,7 +66,6 @@ interface DownloadLink {
   updatedAt: string | null
 }
 
-// 添加响应类型定义
 interface MovieResponse {
   data: MovieDetail | null;
   code: number;
@@ -101,39 +99,15 @@ const error = ref('')
 const isLoading = ref(true)
 const isContentProtected = ref(true)
 
-// 更新 document title 的函数
-const updateDocumentTitle = (movieTitle: string) => {
-  // 更新页面标题
-  document.title = movieTitle ? `MovieHub | ${movieTitle}` : 'MovieHub'
+// 更新页面元数据
+const updateMetadata = () => {
+  // 基础标题和描述
+  const title = `${movie.value.title} (${movie.value.releaseYear}) - MovieHub`
+  const description = movie.value.intro || '暂无简介'
 
-  // 更新基础 meta description
-  let metaDescription = document.querySelector('meta[name="description"]')
-  if (!metaDescription) {
-    metaDescription = document.createElement('meta')
-    metaDescription.setAttribute('name', 'description')
-    document.head.appendChild(metaDescription)
-  }
-  metaDescription.setAttribute('content', movie.value.intro || '暂无简介')
+  document.title = title
 
-  // 更新 Open Graph 元数据
-  const ogTags = {
-    'og:title': `${movieTitle} - MovieHub`,
-    'og:description': movie.value.intro || '暂无简介',
-    'og:image': movie.value.posterUrl,
-    'og:url': window.location.href,
-    'og:type': 'website',
-    'og:site_name': 'MovieHub'
-  }
-
-  // 更新 Twitter Card 元数据
-  const twitterTags = {
-    'twitter:card': 'summary_large_image',
-    'twitter:title': `${movieTitle} - MovieHub`,
-    'twitter:description': movie.value.intro || '暂无简介',
-    'twitter:image': movie.value.posterUrl
-  }
-
-  // 辅助函数：更新或创建 meta 标签
+  // 更新meta标签
   const updateMetaTag = (name: string, content: string, property = false) => {
     let meta = document.querySelector(property ? `meta[property="${name}"]` : `meta[name="${name}"]`)
     if (!meta) {
@@ -144,21 +118,29 @@ const updateDocumentTitle = (movieTitle: string) => {
     meta.setAttribute('content', content)
   }
 
-  // 更新所有 Open Graph 标签
-  Object.entries(ogTags).forEach(([name, content]) => {
-    updateMetaTag(name, content, true)
-  })
+  // 基础SEO meta标签
+  updateMetaTag('description', description)
+  updateMetaTag('keywords', `${movie.value.title},${movie.value.categories.join(',')},电影下载,在线观看`)
 
-  // 更新所有 Twitter Card 标签
-  Object.entries(twitterTags).forEach(([name, content]) => {
-    updateMetaTag(name, content)
-  })
+  // Open Graph meta标签
+  updateMetaTag('og:title', title, true)
+  updateMetaTag('og:description', description, true)
+  updateMetaTag('og:type', 'video.movie', true)
+  updateMetaTag('og:image', movie.value.posterUrl, true)
+  updateMetaTag('og:url', window.location.href, true)
+  updateMetaTag('og:site_name', 'MovieHub', true)
+
+  // Twitter Card meta标签
+  updateMetaTag('twitter:card', 'summary_large_image')
+  updateMetaTag('twitter:title', title)
+  updateMetaTag('twitter:description', description)
+  updateMetaTag('twitter:image', movie.value.posterUrl)
 
   // 添加结构化数据
-  const movieSchema = {
+  const schema = {
     '@context': 'https://schema.org',
     '@type': 'Movie',
-    'name': movieTitle,
+    'name': movie.value.title,
     'description': movie.value.intro,
     'image': movie.value.posterUrl,
     'datePublished': movie.value.createTime,
@@ -166,21 +148,28 @@ const updateDocumentTitle = (movieTitle: string) => {
       '@type': 'Person',
       'name': movie.value.director
     },
-    'actor': movie.value.actors.map((actor: { name: string }) => ({
+    'actor': movie.value.actors.map(actor => ({
       '@type': 'Person',
       'name': actor.name
     })),
-    'genre': movie.value.categories
+    'genre': movie.value.categories,
+    'duration': `PT${movie.value.duration}M`,
+    'countryOfOrigin': movie.value.country,
+    'aggregateRating': {
+      '@type': 'AggregateRating',
+      'ratingValue': movie.value.rating,
+      'bestRating': '10',
+      'worstRating': '0'
+    }
   }
 
-  // 更新或创建结构化数据脚本标签
   let scriptTag = document.querySelector('script[type="application/ld+json"]')
   if (!scriptTag) {
     scriptTag = document.createElement('script')
     scriptTag.setAttribute('type', 'application/ld+json')
     document.head.appendChild(scriptTag)
   }
-  scriptTag.textContent = JSON.stringify(movieSchema)
+  scriptTag.textContent = JSON.stringify(schema)
 }
 
 const fetchMovieDetail = async (id: string | string[]) => {
@@ -227,14 +216,13 @@ const fetchMovieDetail = async (id: string | string[]) => {
       }))
     }
 
-    // 更新页面标题和描述
-    updateDocumentTitle(movie.value.title)
+    // 更新页面元数据
+    updateMetadata()
     isContentProtected.value = false
 
   } catch (err) {
     console.error('Failed to fetch movie details:', err)
     error.value = err instanceof Error ? err.message : '获取电影详情失败'
-    updateDocumentTitle('') // 发生错误时重置标题
     isContentProtected.value = false
   } finally {
     isLoading.value = false
@@ -273,29 +261,10 @@ const fetchDownloadLinks = async (movieId: string | string[]): Promise<LinksResp
     } else {
       error.value = '获取下载链接失败'
     }
-    downloadLinks.value = [] // 确保在错误时清空下载链接
+    downloadLinks.value = []
     return { data: [], code: 500, message: error.value }
   }
 }
-
-const splitTextIntoChunks = (text: string, chunkSize: number) => {
-  const chunks = [];
-  for (let i = 0; i < text.length; i += chunkSize) {
-    chunks.push(text.slice(i, i + chunkSize));
-  }
-  return chunks;
-}
-
-const detectDebugger = () => {
-  const checkDebugger = () => {
-    if (window.outerHeight - window.innerHeight > 100 || window.outerWidth - window.innerWidth > 100) {
-      alert('检测到调试器，请关闭开发者工具后重试。');
-      window.location.reload();
-    }
-  };
-
-  setInterval(checkDebugger, 1000);
-};
 
 // 添加路由监听，处理路由参数变化
 watch(() => route.params.id, (newId) => {
@@ -325,8 +294,11 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  // document.title = '4KMovieHub'
-  updateDocumentTitle('')
+  // 清理结构化数据
+  const scriptTag = document.querySelector('script[type="application/ld+json"]')
+  if (scriptTag) {
+    scriptTag.remove()
+  }
 })
 </script>
 
@@ -354,18 +326,18 @@ onUnmounted(() => {
     </div>
 
     <!-- Content -->
-    <div v-else-if="!isLoading && !isContentLocked" class="max-w-6xl mx-auto">
+    <article v-else-if="!isLoading && !isContentLocked" class="max-w-6xl mx-auto">
       <div :class="[
         'rounded-2xl overflow-hidden shadow-xl',
         themeStore.isDark ? 'bg-gray-800' : 'bg-white'
       ]">
         <!-- Movie Header with Poster and Basic Info -->
-        <div class="relative overflow-hidden">
+        <header class="relative overflow-hidden">
           <!-- Background Image (Blurred) -->
           <div class="absolute inset-0 z-0">
             <img
                 :src="movie.posterUrl"
-                :alt="movie.title"
+                :alt="`${movie.title} 背景图片`"
                 class="w-full h-full object-cover filter blur-xl opacity-30 transform scale-110"
             />
           </div>
@@ -377,7 +349,7 @@ onUnmounted(() => {
               <div class="lg:col-span-4">
                 <img
                     :src="movie.posterUrl"
-                    :alt="movie.title"
+                    :alt="`${movie.title} 电影海报`"
                     class="w-full rounded-lg shadow-2xl"
                     @error="($event.target as HTMLImageElement).src = 'https://placehold.co/400x600/1f2937/ffffff?text=Movie+Poster'"
                 />
@@ -388,17 +360,17 @@ onUnmounted(() => {
                 <h1 class="text-4xl font-bold mb-4 line-clamp-4">{{ movie.title }}</h1>
                 <div class="flex flex-wrap items-center gap-4 mb-6">
                   <div class="flex items-center">
-                    <span class="text-yellow-400 mr-2 text-2xl">⭐</span>
+                    <span class="text-yellow-400 mr-2 text-2xl" aria-label="评分">⭐</span>
                     <span class="text-2xl font-bold">{{ movie.rating ? movie.rating.toFixed(1) : 'N/A' }}</span>
                   </div>
-                  <span class="text-lg">{{ movie.releaseYear }}</span>
+                  <time :datetime="movie.releaseYear.toString()" class="text-lg">{{ movie.releaseYear }}</time>
                   <span class="text-lg">{{ movie.duration }}分钟</span>
                   <span class="text-lg">{{ movie.country }}</span>
                 </div>
 
                 <!-- Categories -->
                 <div class="flex flex-wrap gap-2">
-                  <span v-for="category in shuffleArray(movie.categories || [])"
+                  <span v-for="category in movie.categories"
                         :key="category"
                         :class="[
                           'px-3 py-1 rounded-full text-sm font-medium transition-colors',
@@ -412,61 +384,58 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
         <!-- Movie Details -->
         <div class="p-8 space-y-8">
           <!-- Synopsis -->
-          <div>
+          <section>
             <h2 class="text-xl font-semibold mb-3">剧情简介</h2>
-            <div v-if="!isContentProtected" class="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-              <span v-for="(chunk, index) in splitTextIntoChunks(movie.intro, 50)" :key="index" :class="index % 2 === 0 ? 'even-chunk' : 'odd-chunk'">
-                {{ chunk }}
-              </span>
+            <div class="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+              {{ movie.intro }}
             </div>
-          </div>
+          </section>
 
           <!-- Cast & Crew -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- Director -->
-            <div>
+            <section>
               <h2 class="text-xl font-semibold mb-3">导演</h2>
               <p class="text-gray-600 dark:text-gray-300">{{ movie.director }}</p>
-            </div>
+            </section>
 
             <!-- Writers -->
-            <div>
+            <section>
               <h2 class="text-xl font-semibold mb-3">编剧</h2>
               <div class="space-y-2">
-                <p v-for="writer in shuffleArray(movie.writers)"
+                <p v-for="writer in movie.writers"
                    :key="writer.id"
                    class="text-gray-600 dark:text-gray-300">
                   {{ writer.name }}
                 </p>
               </div>
-            </div>
+            </section>
           </div>
 
           <!-- Actors -->
-          <div>
+          <section>
             <h2 class="text-xl font-semibold mb-3">演员表</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div v-for="actor in shuffleArray(movie.actors)"
+              <div v-for="actor in movie.actors"
                    :key="actor.id"
                    class="text-gray-600 dark:text-gray-300">
                 {{ actor.name }}
               </div>
             </div>
-          </div>
+          </section>
 
           <!-- Download Links -->
-          <MovieDownloads
-              v-if="downloadLinks.length > 0"
-              :links="downloadLinks"
-          />
+          <section v-if="downloadLinks.length > 0">
+            <MovieDownloads :links="downloadLinks" />
+          </section>
         </div>
       </div>
-    </div>
+    </article>
   </div>
   <CaptchaModal
       v-if="showCaptcha"
@@ -475,36 +444,3 @@ onUnmounted(() => {
       @error="error = '验证失败，请重试'"
   />
 </template>
-
-<style scoped>
-.even-chunk {
-  /* 隐式样式策略 */
-  color: inherit;
-  background: linear-gradient(to right, transparent 50%, rgba(255, 255, 255, 0.1) 50%);
-  background-size: 200% 100%;
-  background-position: 100%;
-  transition: background-position 0.5s;
-}
-
-.odd-chunk {
-  /* 隐式样式策略 */
-  color: inherit;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0.1) 50%, transparent 50%);
-  background-size: 200% 100%;
-  background-position: 0%;
-  transition: background-position 0.5s;
-}
-
-.even-chunk:hover, .odd-chunk:hover {
-  background-position: 0%;
-}
-
-/* 黑暗模式适配 */
-.dark .even-chunk {
-  background: linear-gradient(to right, transparent 50%, rgba(0, 0, 0, 0.1) 50%);
-}
-
-.dark .odd-chunk {
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.1) 50%, transparent 50%);
-}
-</style>
