@@ -158,6 +158,14 @@ interface MovieResponse {
     message: string;
 }
 
+interface LoginResponse {
+    userId: string
+    username: string
+    balance: number
+    token: string
+    avatarUrl?: string // 添加头像URL字段
+}
+
 // API service
 export const apiService = {
     // Movie related APIs
@@ -185,7 +193,7 @@ export const apiService = {
 
     // Auth related APIs
     auth: {
-        login: async (credentials: LoginCredentials) => {
+        login: async (credentials: LoginCredentials): Promise<{ data: LoginResponse }> => {
             try {
                 // 检查是否支持 crypto.subtle
                 if (!window.crypto || !window.crypto.subtle) {

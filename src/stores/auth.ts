@@ -8,6 +8,7 @@ interface UserInfo {
   userId: string
   username: string
   balance: number
+  avatarUrl?: string // 添加头像URL字段
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -62,7 +63,8 @@ export const useAuthStore = defineStore('auth', () => {
       userInfo.value = {
         userId: result.data.userId,
         username: result.data.username,
-        balance: result.data.balance
+        balance: result.data.balance,
+        avatarUrl: result.data.avatarUrl // 保存头像URL
       }
       isAuthenticated.value = true
 
@@ -118,6 +120,6 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     initializeFromStorage,
-    resetState // 导出重置方法
+    resetState
   }
 })
