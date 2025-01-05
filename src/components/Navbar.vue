@@ -23,18 +23,21 @@ const categories = [
 ]
 
 const searchQuery = ref('')
+const showResults = ref(false)
+const searchResults = ref([])
 const showUserMenu = ref(false)
 const showMobileMenu = ref(false)
 const isNavVisible = ref(true)
 const lastScrollPosition = ref(0)
+const isClearing = ref(false)
+const canClearAll = ref(false)
 
 const handleSearch = () => {
   if (!searchQuery.value.trim()) return
   router.push(`/search?q=${searchQuery.value}`)
-  // 搜索后收起移动端菜单
   showMobileMenu.value = false
-  // 让输入框失去焦点
   document.activeElement instanceof HTMLElement && document.activeElement.blur()
+  canClearAll.value = true
 }
 
 const handleScroll = () => {
@@ -84,15 +87,31 @@ const handleShowRegister = () => {
 }
 
 const handleFocus = () => {
-  // 移除自动清空搜索内容的逻辑
-  showResults.value = false // 隐藏之前的搜索结果
-  searchResults.value = [] // 清空搜索结果数组
+  showResults.value = false
+  searchResults.value = []
+  if (!searchQuery.value) {
+    canClearAll.value = false
+  }
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Backspace') { // 改为监听退格键
-    event.preventDefault() // 阻止退格键的默认行为
-    searchQuery.value = '' // 清空搜索内容
+  if (event.key === 'Backspace' && canClearAll.value) {
+    event.preventDefault()
+    isClearing.value = true
+
+    // 立即清空实际输入值，但保持动画效果
+    const currentValue = searchQuery.value
+    searchQuery.value = ''
+
+    // 重新触发动画
+    const input = event.target as HTMLInputElement
+    input.setAttribute('data-value', currentValue)
+
+    // 等待动画完成后重置状态
+    setTimeout(() => {
+      isClearing.value = false
+      canClearAll.value = false
+    }, 300) // 与动画时长匹配
   }
 }
 
@@ -153,6 +172,7 @@ onUnmounted(() => {
           <div class="relative hidden sm:block">
             <input
                 v-model="searchQuery"
+                :data-value="searchQuery"
                 @keyup.enter="handleSearch"
                 @keydown="handleKeydown"
                 type="text"
@@ -160,7 +180,8 @@ onUnmounted(() => {
                 @focus="handleFocus"
                 :class="[
                 'px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-                themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
+                themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100',
+                { 'clear-animation': isClearing }
               ]"
             />
           </div>
@@ -264,12 +285,17 @@ onUnmounted(() => {
       <div class="px-4 py-3">
         <input
             v-model="searchQuery"
+            :data-value="searchQuery"
             @keyup.enter="handleSearch"
             @keydown="handleKeydown"
             type="text"
             placeholder="搜索电影..."
+            @focus="handleFocus"
             class="w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            :class="themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'"
+            :class="[
+            themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100',
+            { 'clear-animation': isClearing }
+          ]"
         />
       </div>
 
@@ -300,5 +326,33 @@ onUnmounted(() => {
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+@keyframes dissolve {
+  0% {
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 100%);
+  }
+}
+
+.clear-animation {
+  position: relative;
+}
+
+.clear-animation::before {
+  content: attr(data-value);
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  white-space: pre;
+  overflow: hidden;
+  width: calc(100% - 2rem);
+  animation: dissolve 0.5s ease-out forwards;
+  color: inherit;
+  background: inherit;
 }
 </style>
