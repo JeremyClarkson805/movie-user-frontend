@@ -82,7 +82,7 @@ const handleLinkClick = async (link: typeof props.links[0]) => {
 <template>
   <div>
     <h2 class="text-xl font-semibold mb-4">下载链接</h2>
-    <div class="space-y-2">
+    <div class="space-y-2 sm:space-y-3">
       <div v-for="link in links"
            :key="link.id"
            class="relative overflow-hidden rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
@@ -92,22 +92,22 @@ const handleLinkClick = async (link: typeof props.links[0]) => {
         >
           <div class="flex flex-col sm:flex-row items-start sm:items-center p-2 sm:p-4 gap-1 sm:gap-0">
             <span :class="[
-              'px-2 py-0.5 rounded text-xs font-medium text-white sm:mr-3',
+              'px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-medium text-white sm:mr-3',
               getFileTypeLabel(link.fileType).color
             ]">
               {{ getFileTypeLabel(link.fileType).label }}
             </span>
 
             <div class="flex-1 w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-center justify-between">
-              <span class="font-medium text-sm truncate w-full sm:w-auto sm:pr-4">
+              <span class="font-medium text-sm sm:text-base truncate w-full sm:w-auto sm:pr-4">
                 {{ link.linkName }}
               </span>
               <div class="flex items-center gap-1 sm:gap-3 mt-0.5 sm:mt-0 w-full sm:w-auto">
                 <span v-if="link.passwd"
-                      class="text-xs bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                      class="text-xs sm:text-sm bg-gray-200 dark:bg-gray-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
                   密码: {{ link.passwd }}
                 </span>
-                <span class="font-medium text-xs opacity-75 whitespace-nowrap">
+                <span class="font-medium text-xs sm:text-sm opacity-75 whitespace-nowrap">
                   {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
                 </span>
               </div>
