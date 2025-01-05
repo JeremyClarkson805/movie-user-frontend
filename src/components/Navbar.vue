@@ -80,6 +80,13 @@ const handleShowRegister = () => {
   modalStore.openRegister()
 }
 
+const handleFocus = () => {
+  // 当搜索框获得焦点时清空搜索内容
+  searchQuery.value = ''
+  showResults.value = false // 隐藏之前的搜索结果
+  searchResults.value = [] // 清空搜索结果数组
+}
+
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   document.addEventListener('click', handleClickOutside)
@@ -140,6 +147,7 @@ onUnmounted(() => {
                 @keyup.enter="handleSearch"
                 type="text"
                 placeholder="搜索电影..."
+                @focus="handleFocus"
                 :class="[
                 'px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
