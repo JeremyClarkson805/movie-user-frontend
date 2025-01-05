@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
 import SignInModal from '../components/SignInModal.vue'
+import AvatarCropper from '../components/avatar/AvatarCropper.vue'
 
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
@@ -29,6 +30,9 @@ const checkinSuccess = ref(false)
 const showSignInModal = ref(false)
 const signInModalMessage = ref('')
 const signInModalType = ref<'success' | 'warning' | 'error'>('success')
+const showAvatarCropper = ref(false)
+const showAvatarUpload = ref(false)
+const currentAvatar = ref('')
 
 const editForm = ref({
   nickName: '',
@@ -153,7 +157,7 @@ const handleSignIn = async () => {
     })
 
     const data = await response.json()
-    
+
     if (data.code === 200) {
       signInModalType.value = 'success'
       signInModalMessage.value = '签到成功！获得积分奖励'
@@ -203,6 +207,42 @@ const handleEditSubmit = async () => {
   }
 }
 
+const handleAvatarClick = () => {
+  showAvatarUpload.value = true
+  currentAvatar.value = editForm.value.avatarUrl || userInfo.value?.avatarUrl || ''
+}
+
+const handleAvatarCrop = async (dataUrl: string) => {
+  try {
+    const token = localStorage.getItem('userToken')
+    const formData = new FormData()
+
+    // 将 base64 转换为 Blob
+    const response = await fetch(dataUrl)
+    const blob = await response.blob()
+    formData.append('avatar', blob, 'avatar.jpg')
+
+    const updateResponse = await fetch('/api/user/update/avatar', {
+      method: 'POST',
+      headers: {
+        'Authorization': token || ''
+      },
+      body: formData
+    })
+
+    const data = await updateResponse.json()
+    if (data.code === 200) {
+      await fetchUserInfo() // 重新获取用户信息以更新头像
+      showAvatarCropper.value = false
+    } else {
+      throw new Error(data.message || '更新头像失败')
+    }
+  } catch (err) {
+    console.error('更新头像失败:', err)
+    error.value = '更新头像失败，请稍后重试'
+  }
+}
+
 onMounted(() => {
   fetchUserInfo()
 })
@@ -238,10 +278,20 @@ onMounted(() => {
               <img
                   :src="userInfo.avatarUrl || 'https://placehold.co/200x200/1f2937/ffffff?text=Avatar'"
                   :alt="userInfo.userName"
-                  class="w-24 h-24 rounded-full object-cover border-4"
+                  class="w-24 h-24 rounded-full object-cover border-4 cursor-pointer"
                   :class="themeStore.isDark ? 'border-gray-700' : 'border-white'"
+                  @click="showAvatarCropper = true"
               />
             </div>
+
+            <!-- 头像裁剪组件 -->
+            <AvatarCropper
+                v-if="showAvatarCropper"
+                :show="showAvatarCropper"
+                :current-avatar="userInfo?.avatarUrl"
+                @close="showAvatarCropper = false"
+                @crop="handleAvatarCrop"
+            />
 
             <div class="flex-1">
               <div class="flex items-center space-x-4">
@@ -379,23 +429,27 @@ onMounted(() => {
           <h2 class="text-xl font-bold mb-6">编辑个人资料</h2>
 
           <form @submit.prevent="handleEditSubmit" class="space-y-4">
+            <!-- Avatar Upload Section -->
+            <div class="flex flex-col items-center mb-6">
+              <div class="relative group cursor-pointer" @click="handleAvatarClick">
+                <img
+                  :src="editForm.avatarUrl || userInfo?.avatarUrl || 'https://placehold.co/200x200/1f2937/ffffff?text=Avatar'"
+                  alt="头像"
+                  class="w-24 h-24 rounded-full object-cover transition-opacity group-hover:opacity-75"
+                />
+                <div class="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 group-hover:bg-black/40 transition-colors">
+                  <span class="text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    更换头像
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label class="block text-sm font-medium mb-1">昵称</label>
               <input
                   v-model="editForm.nickName"
                   type="text"
-                  :class="[
-                    'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-                    themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
-                  ]"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium mb-1">头像URL</label>
-              <input
-                  v-model="editForm.avatarUrl"
-                  type="url"
                   :class="[
                     'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                     themeStore.isDark ? 'bg-gray-700' : 'bg-gray-100'
@@ -457,6 +511,15 @@ onMounted(() => {
       :type="signInModalType"
       :message="signInModalMessage"
       @close="showSignInModal = false"
+    />
+
+    <!-- Avatar Cropper Modal -->
+    <AvatarCropper
+      v-if="showAvatarUpload"
+      :show="showAvatarUpload"
+      :current-avatar="currentAvatar"
+      @close="showAvatarUpload = false"
+      @crop="handleAvatarCrop"
     />
   </div>
 </template>
