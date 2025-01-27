@@ -51,7 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   }
 
-  const login = async (credentials: { email: string; password: string }) => {
+  const login = async (credentials: { email: string; password: string }, redirect: boolean = false) => {
     try {
       isLoading.value = true
       error.value = null
@@ -78,7 +78,12 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Add a delay before navigation
       await new Promise(resolve => setTimeout(resolve, 1000))
-      router.push('/')
+
+      // Only redirect to home if redirect is true
+      if (redirect) {
+        router.push('/')
+      }
+
       return true
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'

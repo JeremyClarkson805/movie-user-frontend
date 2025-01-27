@@ -23,7 +23,7 @@ const handleSubmit = async () => {
     const success = await authStore.login({
       email: email.value,
       password: password.value
-    })
+    }, false) // 不进行重定向
 
     if (success) {
       modalStore.closeModal()
