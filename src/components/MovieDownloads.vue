@@ -63,22 +63,38 @@ const handleUnlock = async (link: DownloadLink) => {
     unlockingStatus.value[link.id] = true
     error.value = null
 
-    const response = await fetch('/api/movie/unlock', {
+    const formData = new FormData()
+    formData.append('movieId', link.movieId.toString())
+
+    const response = await fetch('/api/movie/payToGetDownloadLink', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': localStorage.getItem('userToken') || ''
       },
-      body: JSON.stringify({
-        linkId: link.id
-      })
+      body: formData
     })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      if (response.status === 400) {
+        throw new Error(errorData.message || '请求参数错误，请检查输入')
+      } else if (response.status === 401) {
+        throw new Error('登录已过期，请重新登录')
+      } else if (response.status === 403) {
+        throw new Error('没有权限执行此操作')
+      } else if (response.status === 404) {
+        throw new Error('资源不存在')
+      } else if (response.status >= 500) {
+        throw new Error('服务器错误，请稍后重试')
+      } else {
+        throw new Error(errorData.message || '兑换失败，请稍后重试')
+      }
+    }
 
     const data = await response.json()
     if (data.code === 200) {
-      // Update the link with new download URL
-      link.downloadUrl = data.data.downloadUrl
-      link.isBlocked = 0 // Mark as unlocked
+      // Mark as unlocked
+      link.isBlocked = 0
       // Update user's balance
       if (authStore.userInfo) {
         authStore.userInfo.balance -= link.points
@@ -87,7 +103,13 @@ const handleUnlock = async (link: DownloadLink) => {
       throw new Error(data.message || '兑换失败')
     }
   } catch (err) {
+    console.error('Unlock error:', err)
     error.value = err instanceof Error ? err.message : '兑换失败，请稍后重试'
+
+    // 自动清除错误提示
+    setTimeout(() => {
+      error.value = null
+    }, 5000)
   } finally {
     unlockingStatus.value[link.id] = false
   }
@@ -147,8 +169,23 @@ const handleLinkClick = async (link: DownloadLink) => {
     <h2 class="text-xl font-semibold mb-4">下载链接</h2>
 
     <!-- Error Message -->
-    <div v-if="error" class="mb-4 p-4 rounded-lg bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-200">
-      {{ error }}
+    <div v-if="error"
+         class="mb-4 p-4 rounded-lg bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-200 relative">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium">
+            {{ error }}
+          </p>
+          <p class="mt-1 text-xs opacity-75">
+            如果问题持续存在，请刷新页面或联系客服
+          </p>
+        </div>
+      </div>
     </div>
 
     <div class="space-y-2 sm:space-y-3">
