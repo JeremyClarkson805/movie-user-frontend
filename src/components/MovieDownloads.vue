@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
+import { Dialog, DialogPanel, TransitionRoot, TransitionChild } from '@headlessui/vue'
 
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
@@ -27,6 +28,9 @@ const props = defineProps<{
 const copyStatus = ref<{ [key: number]: boolean }>({})
 const unlockingStatus = ref<{ [key: number]: boolean }>({})
 const error = ref<string | null>(null)
+const showConfirmDialog = ref(false)
+const selectedLink = ref<DownloadLink | null>(null)
+const isUnlocking = ref(false)
 
 const getFileTypeLabel = (type: string) => {
   switch (type) {
@@ -48,7 +52,7 @@ const isMobileDevice = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 }
 
-const handleUnlock = async (link: DownloadLink) => {
+const handleUnlockConfirm = async (link: DownloadLink) => {
   if (!authStore.isAuthenticated) {
     error.value = '请先登录后再兑换下载链接'
     return
@@ -59,12 +63,24 @@ const handleUnlock = async (link: DownloadLink) => {
     return
   }
 
+  selectedLink.value = link
+  showConfirmDialog.value = true
+}
+
+const getRemainingPoints = () => {
+  if (!selectedLink.value || !authStore.userInfo) return 0
+  return authStore.userInfo.balance - selectedLink.value.points
+}
+
+const handleConfirm = async () => {
+  if (!selectedLink.value) return
+
   try {
-    unlockingStatus.value[link.id] = true
+    isUnlocking.value = true
     error.value = null
 
     const formData = new FormData()
-    formData.append('movieId', link.movieId.toString())
+    formData.append('movieId', selectedLink.value.movieId.toString())
 
     const response = await fetch('/api/movie/payToGetDownloadLink', {
       method: 'POST',
@@ -94,10 +110,22 @@ const handleUnlock = async (link: DownloadLink) => {
     const data = await response.json()
     if (data.code === 200) {
       // Mark as unlocked
-      link.isBlocked = 0
+      selectedLink.value.isBlocked = 0
       // Update user's balance
       if (authStore.userInfo) {
-        authStore.userInfo.balance -= link.points
+        authStore.userInfo.balance -= selectedLink.value.points
+      }
+      // Refresh download links
+      const linksResponse = await fetch('/api/movie/downloadLink', {
+        method: 'POST',
+        headers: {
+          'Authorization': localStorage.getItem('userToken') || ''
+        },
+        body: formData
+      })
+      const linksData = await linksResponse.json()
+      if (linksData.code === 200) {
+        props.links.splice(0, props.links.length, ...linksData.data)
       }
     } else {
       throw new Error(data.message || '兑换失败')
@@ -105,13 +133,10 @@ const handleUnlock = async (link: DownloadLink) => {
   } catch (err) {
     console.error('Unlock error:', err)
     error.value = err instanceof Error ? err.message : '兑换失败，请稍后重试'
-
-    // 自动清除错误提示
-    setTimeout(() => {
-      error.value = null
-    }, 5000)
   } finally {
-    unlockingStatus.value[link.id] = false
+    isUnlocking.value = false
+    showConfirmDialog.value = false
+    selectedLink.value = null
   }
 }
 
@@ -260,7 +285,7 @@ const handleLinkClick = async (link: DownloadLink) => {
               </span>
             </div>
             <button
-                @click="handleUnlock(link)"
+                @click="handleUnlockConfirm(link)"
                 :disabled="unlockingStatus[link.id]"
                 class="px-4 py-1.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
             >
@@ -283,5 +308,98 @@ const handleLinkClick = async (link: DownloadLink) => {
         </div>
       </div>
     </div>
+
+    <!-- Confirmation Dialog -->
+    <TransitionRoot appear :show="showConfirmDialog" as="template">
+      <Dialog as="div" @close="showConfirmDialog = false" class="relative z-50">
+        <TransitionChild
+            as="template"
+            enter="duration-300 ease-out"
+            enter-from="opacity-0"
+            enter-to="opacity-100"
+            leave="duration-200 ease-in"
+            leave-from="opacity-100"
+            leave-to="opacity-0"
+        >
+          <div class="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+        </TransitionChild>
+
+        <div class="fixed inset-0 overflow-y-auto">
+          <div class="flex min-h-full items-center justify-center p-4 text-center">
+            <TransitionChild
+                as="template"
+                enter="duration-300 ease-out"
+                enter-from="opacity-0 scale-95"
+                enter-to="opacity-100 scale-100"
+                leave="duration-200 ease-in"
+                leave-from="opacity-100 scale-100"
+                leave-to="opacity-0 scale-95"
+            >
+              <DialogPanel :class="[
+                'w-full max-w-md transform overflow-hidden rounded-2xl p-6 text-left align-middle shadow-xl transition-all',
+                themeStore.isDark ? 'bg-gray-800' : 'bg-white'
+              ]">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-lg font-medium leading-6">
+                    确认兑换下载链接
+                  </h3>
+                  <button
+                      @click="showConfirmDialog = false"
+                      class="rounded-full p-1 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="mt-4 space-y-4">
+                  <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                      <span :class="themeStore.isDark ? 'text-gray-400' : 'text-gray-600'">
+                        当前积分
+                      </span>
+                      <span class="font-medium">{{ authStore.userInfo?.balance || 0 }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span :class="themeStore.isDark ? 'text-gray-400' : 'text-gray-600'">
+                        所需积分
+                      </span>
+                      <span class="font-medium text-blue-500">
+                        {{ selectedLink?.points || 0 }}
+                      </span>
+                    </div>
+                    <div class="border-t dark:border-gray-700 my-2"></div>
+                    <div class="flex justify-between items-center">
+                      <span :class="themeStore.isDark ? 'text-gray-400' : 'text-gray-600'">
+                        剩余积分
+                      </span>
+                      <span class="font-medium">{{ getRemainingPoints() }}</span>
+                    </div>
+                  </div>
+
+                  <div class="mt-6 flex justify-end space-x-3">
+                    <button
+                        @click="showConfirmDialog = false"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        :class="themeStore.isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'"
+                    >
+                      取消
+                    </button>
+                    <button
+                        @click="handleConfirm"
+                        :disabled="isUnlocking"
+                        class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {{ isUnlocking ? '处理中...' : '确认兑换' }}
+                    </button>
+                  </div>
+                </div>
+              </DialogPanel>
+            </TransitionChild>
+          </div>
+        </div>
+      </Dialog>
+    </TransitionRoot>
   </div>
 </template>
