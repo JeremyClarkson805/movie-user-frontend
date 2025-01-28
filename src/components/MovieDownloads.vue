@@ -237,16 +237,41 @@ const handleLinkClick = async (link: DownloadLink) => {
 
     <!-- Error Message -->
     <div v-if="error"
-         class="mb-4 p-4 rounded-lg bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-200 relative">
+         :class="[
+           'mb-4 p-4 rounded-lg relative',
+           error === '积分不足，无法兑换此下载链接' 
+             ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-200'
+             : 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-200'
+         ]">
       <div class="flex items-start">
         <div class="flex-shrink-0">
-          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          <svg v-if="error === '积分不足，无法兑换此下载链接'" 
+               class="h-5 w-5 text-yellow-400" 
+               viewBox="0 0 20 20" 
+               fill="currentColor">
+            <path fill-rule="evenodd" 
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" 
+                  clip-rule="evenodd" />
+          </svg>
+          <svg v-else 
+               class="h-5 w-5 text-red-400" 
+               viewBox="0 0 20 20" 
+               fill="currentColor">
+            <path fill-rule="evenodd" 
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" 
+                  clip-rule="evenodd" />
           </svg>
         </div>
         <div class="ml-3">
           <p class="text-sm font-medium">{{ error }}</p>
-          <p class="mt-1 text-xs opacity-75">如果问题持续存在，请刷新页面或联系客服</p>
+          <p class="mt-1 text-xs opacity-75">
+            <template v-if="error === '积分不足，无法兑换此下载链接'">
+              您可以通过在右上角的个人档案中签到以获取更多积分
+            </template>
+            <template v-else>
+              如果问题持续存在，请刷新页面或联系客服
+            </template>
+          </p>
         </div>
       </div>
     </div>
