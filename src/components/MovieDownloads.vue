@@ -110,22 +110,16 @@ const handleConfirm = async () => {
 
     const data = await response.json()
     if (data.code === 200) {
-      // Show success animation
       showSuccessAnimation.value = true
-
-      // Mark as unlocked
       selectedLink.value.isBlocked = 0
-      // Update user's balance
       if (authStore.userInfo) {
         authStore.userInfo.balance -= selectedLink.value.points
       }
-
-      // Hide confirmation dialog
       showConfirmDialog.value = false
 
-      // Wait for animation to complete before refreshing links
       setTimeout(async () => {
-        // Refresh download links
+        const formData = new FormData()
+        formData.append('movieId', selectedLink.value.movieId.toString())
         const linksResponse = await fetch('/api/movie/downloadLink', {
           method: 'POST',
           headers: {
@@ -137,10 +131,8 @@ const handleConfirm = async () => {
         if (linksData.code === 200) {
           props.links.splice(0, props.links.length, ...linksData.data)
         }
-
-        // Hide success animation
         showSuccessAnimation.value = false
-      }, 2000) // Match the animation duration
+      }, 2000)
     } else {
       throw new Error(data.message || '兑换失败')
     }
@@ -216,12 +208,8 @@ const handleLinkClick = async (link: DownloadLink) => {
           </svg>
         </div>
         <div class="ml-3">
-          <p class="text-sm font-medium">
-            {{ error }}
-          </p>
-          <p class="mt-1 text-xs opacity-75">
-            如果问题持续存在，请刷新页面或联系客服
-          </p>
+          <p class="text-sm font-medium">{{ error }}</p>
+          <p class="mt-1 text-xs opacity-75">如果问题持续存在，请刷新页面或联系客服</p>
         </div>
       </div>
     </div>
@@ -230,83 +218,87 @@ const handleLinkClick = async (link: DownloadLink) => {
       <div v-for="link in links"
            :key="link.id"
            class="relative overflow-hidden rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <!-- 未锁定状态的点击区域 -->
-        <div v-if="link.isBlocked === 0"
-             @click="handleLinkClick(link)"
-             class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-          <div class="flex items-center p-4">
-            <!-- 文件类型标签 -->
-            <span :class="[
-              'px-2 py-1 rounded text-sm font-medium text-white mr-3',
-              getFileTypeLabel(link.fileType).color
-            ]">
-              {{ getFileTypeLabel(link.fileType).label }}
-            </span>
-
-            <!-- 链接信息 -->
-            <div class="flex-1 flex items-center justify-between">
-              <span class="font-medium truncate pr-4">
-                {{ link.linkName }}
+        <!-- 未锁定状态 -->
+        <template v-if="link.isBlocked === 0">
+          <button
+              class="w-full text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+              @click="handleLinkClick(link)"
+          >
+            <div class="flex flex-col sm:flex-row items-start sm:items-center p-2 sm:p-4 gap-1 sm:gap-0">
+              <span :class="[
+                'px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-medium text-white sm:mr-3',
+                getFileTypeLabel(link.fileType).color
+              ]">
+                {{ getFileTypeLabel(link.fileType).label }}
               </span>
-              <div class="flex items-center space-x-3">
-                <span v-if="link.passwd"
-                      class="text-sm bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
-                  密码: {{ link.passwd }}
+
+              <div class="flex-1 w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                <span class="font-medium text-sm sm:text-base truncate w-full sm:w-auto sm:pr-4">
+                  {{ link.linkName }}
                 </span>
-                <span class="text-sm opacity-75 whitespace-nowrap">
-                  {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
-                </span>
+                <div class="flex items-center gap-1 sm:gap-3 mt-0.5 sm:mt-0 w-full sm:w-auto">
+                  <span v-if="link.passwd"
+                        class="text-xs sm:text-sm bg-gray-200 dark:bg-gray-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+                    密码: {{ link.passwd }}
+                  </span>
+                  <span class="font-medium text-xs sm:text-sm opacity-75 whitespace-nowrap">
+                    {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </button>
+        </template>
 
         <!-- 锁定状态 -->
-        <div v-else class="flex items-center justify-between p-4">
-          <div class="flex items-center flex-1">
-            <!-- 文件类型标签 -->
-            <span :class="[
-              'px-2 py-1 rounded text-sm font-medium text-white mr-3',
-              getFileTypeLabel(link.fileType).color
-            ]">
-              {{ getFileTypeLabel(link.fileType).label }}
-            </span>
+        <template v-else>
+          <div class="p-2 sm:p-4">
+            <div class="flex flex-col gap-2">
+              <!-- 上半部分：链接信息 -->
+              <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-0">
+                <span :class="[
+                  'px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-medium text-white sm:mr-3',
+                  getFileTypeLabel(link.fileType).color
+                ]">
+                  {{ getFileTypeLabel(link.fileType).label }}
+                </span>
 
-            <!-- 链接信息 -->
-            <div class="flex-1 flex items-center justify-between">
-              <span class="font-medium truncate pr-4">
-                {{ link.linkName }}
-              </span>
-              <div class="flex items-center space-x-3">
-                <span v-if="link.passwd"
-                      class="text-sm bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
-                  密码: {{ link.passwd }}
-                </span>
-                <span class="text-sm opacity-75 whitespace-nowrap">
-                  {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
-                </span>
+                <div class="flex-1 w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                  <span class="font-medium text-sm sm:text-base truncate w-full sm:w-auto sm:pr-4">
+                    {{ link.linkName }}
+                  </span>
+                  <div class="flex items-center gap-1 sm:gap-3 mt-0.5 sm:mt-0 w-full sm:w-auto">
+                    <span v-if="link.passwd"
+                          class="text-xs sm:text-sm bg-gray-200 dark:bg-gray-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+                      密码: {{ link.passwd }}
+                    </span>
+                    <span class="font-medium text-xs sm:text-sm opacity-75 whitespace-nowrap">
+                      {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 下半部分：解锁按钮 -->
+              <div class="flex items-center justify-between border-t dark:border-gray-700 pt-2 mt-1">
+                <div class="flex items-center gap-1">
+                  <span class="text-base sm:text-lg">🔒</span>
+                  <span class="text-xs sm:text-sm font-medium text-blue-500">
+                    {{ link.points }} 积分
+                  </span>
+                </div>
+                <button
+                    @click="handleUnlockConfirm(link)"
+                    :disabled="unlockingStatus[link.id]"
+                    class="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-xs sm:text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  <span v-if="unlockingStatus[link.id]" class="animate-spin text-xs sm:text-sm">⚡️</span>
+                  <span>{{ unlockingStatus[link.id] ? '解锁中' : '解锁' }}</span>
+                </button>
               </div>
             </div>
           </div>
-
-          <!-- 解锁按钮 -->
-          <div class="flex items-center space-x-3 ml-4">
-            <div class="flex items-center space-x-2">
-              <span class="text-lg">🔒</span>
-              <span class="text-sm font-medium text-blue-500">
-                {{ link.points }} 积分
-              </span>
-            </div>
-            <button
-                @click="handleUnlockConfirm(link)"
-                :disabled="unlockingStatus[link.id]"
-                class="px-4 py-1.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
-            >
-              <span v-if="unlockingStatus[link.id]" class="animate-spin text-sm">⚡️</span>
-              <span>{{ unlockingStatus[link.id] ? '解锁中' : '解锁' }}</span>
-            </button>
-          </div>
-        </div>
+        </template>
 
         <!-- 复制成功提示 -->
         <div
