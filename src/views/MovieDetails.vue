@@ -232,7 +232,7 @@ const fetchMovieDetail = async (id: string | string[]) => {
 const fetchDownloadLinks = async (movieId: string | string[]): Promise<LinksResponse> => {
   try {
     const formData = new FormData()
-    formData.append('id', movieId.toString())
+    formData.append('movieId', movieId.toString())
 
     const response = await fetch('/api/movie/downloadLink', {
       method: 'POST',
