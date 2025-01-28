@@ -31,6 +31,7 @@ const error = ref<string | null>(null)
 const showConfirmDialog = ref(false)
 const selectedLink = ref<DownloadLink | null>(null)
 const isUnlocking = ref(false)
+const showSuccessAnimation = ref(false)
 
 const getFileTypeLabel = (type: string) => {
   switch (type) {
@@ -109,24 +110,37 @@ const handleConfirm = async () => {
 
     const data = await response.json()
     if (data.code === 200) {
+      // Show success animation
+      showSuccessAnimation.value = true
+
       // Mark as unlocked
       selectedLink.value.isBlocked = 0
       // Update user's balance
       if (authStore.userInfo) {
         authStore.userInfo.balance -= selectedLink.value.points
       }
-      // Refresh download links
-      const linksResponse = await fetch('/api/movie/downloadLink', {
-        method: 'POST',
-        headers: {
-          'Authorization': localStorage.getItem('userToken') || ''
-        },
-        body: formData
-      })
-      const linksData = await linksResponse.json()
-      if (linksData.code === 200) {
-        props.links.splice(0, props.links.length, ...linksData.data)
-      }
+
+      // Hide confirmation dialog
+      showConfirmDialog.value = false
+
+      // Wait for animation to complete before refreshing links
+      setTimeout(async () => {
+        // Refresh download links
+        const linksResponse = await fetch('/api/movie/downloadLink', {
+          method: 'POST',
+          headers: {
+            'Authorization': localStorage.getItem('userToken') || ''
+          },
+          body: formData
+        })
+        const linksData = await linksResponse.json()
+        if (linksData.code === 200) {
+          props.links.splice(0, props.links.length, ...linksData.data)
+        }
+
+        // Hide success animation
+        showSuccessAnimation.value = false
+      }, 2000) // Match the animation duration
     } else {
       throw new Error(data.message || '兑换失败')
     }
@@ -135,7 +149,6 @@ const handleConfirm = async () => {
     error.value = err instanceof Error ? err.message : '兑换失败，请稍后重试'
   } finally {
     isUnlocking.value = false
-    showConfirmDialog.value = false
     selectedLink.value = null
   }
 }
@@ -401,5 +414,96 @@ const handleLinkClick = async (link: DownloadLink) => {
         </div>
       </Dialog>
     </TransitionRoot>
+
+    <!-- Success Animation Overlay -->
+    <TransitionRoot appear :show="showSuccessAnimation" as="template">
+      <div class="fixed inset-0 z-50 flex items-center justify-center">
+        <TransitionChild
+            as="template"
+            enter="duration-300 ease-out"
+            enter-from="opacity-0"
+            enter-to="opacity-100"
+            leave="duration-200 ease-in"
+            leave-from="opacity-100"
+            leave-to="opacity-0"
+        >
+          <div class="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+        </TransitionChild>
+
+        <TransitionChild
+            as="template"
+            enter="duration-500 ease-out"
+            enter-from="opacity-0 scale-95"
+            enter-to="opacity-100 scale-100"
+            leave="duration-200 ease-in"
+            leave-from="opacity-100 scale-100"
+            leave-to="opacity-0 scale-95"
+        >
+          <div class="relative transform overflow-hidden rounded-2xl bg-gradient-to-r from-green-500 to-blue-500 p-6 text-center shadow-xl transition-all">
+            <div class="relative z-10 text-white">
+              <!-- Success Icon -->
+              <div class="mb-4 flex justify-center">
+                <svg class="h-16 w-16 animate-bounce text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+
+              <!-- Success Message -->
+              <h3 class="mb-2 text-2xl font-bold">兑换成功！</h3>
+              <p class="text-lg">下载链接已解锁</p>
+
+              <!-- Animated Particles -->
+              <div class="absolute inset-0 -z-10">
+                <div class="particle-1"></div>
+                <div class="particle-2"></div>
+                <div class="particle-3"></div>
+              </div>
+            </div>
+          </div>
+        </TransitionChild>
+      </div>
+    </TransitionRoot>
   </div>
 </template>
+
+<style scoped>
+@keyframes float-up {
+  0% {
+    transform: translateY(100%) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100%) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.particle-1,
+.particle-2,
+.particle-3 {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.6);
+  animation: float-up 2s infinite;
+}
+
+.particle-1 {
+  left: 25%;
+  animation-delay: 0s;
+}
+
+.particle-2 {
+  left: 50%;
+  animation-delay: 0.5s;
+}
+
+.particle-3 {
+  left: 75%;
+  animation-delay: 1s;
+}
+</style>
