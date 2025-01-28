@@ -59,13 +59,41 @@ const handleUnlockConfirm = async (link: DownloadLink) => {
     return
   }
 
-  if (link.points > (authStore.userInfo?.balance || 0)) {
-    error.value = '积分不足，无法兑换此下载链接'
-    return
-  }
+  try {
+    // 先获取最新的积分余额
+    const balanceResponse = await fetch('/api/user/getBalance', {
+      method: 'GET',
+      headers: {
+        'Authorization': localStorage.getItem('userToken') || ''
+      }
+    })
 
-  selectedLink.value = link
-  showConfirmDialog.value = true
+    if (!balanceResponse.ok) {
+      throw new Error('获取积分余额失败')
+    }
+
+    const balanceData = await balanceResponse.json()
+    if (balanceData.code === 200) {
+      // 更新用户积分余额
+      if (authStore.userInfo) {
+        authStore.userInfo.balance = balanceData.data
+      }
+
+      // 检查积分是否足够
+      if (link.points > balanceData.data) {
+        error.value = '积分不足，无法兑换此下载链接'
+        return
+      }
+
+      selectedLink.value = link
+      showConfirmDialog.value = true
+    } else {
+      throw new Error(balanceData.message || '获取积分余额失败')
+    }
+  } catch (err) {
+    console.error('Get balance error:', err)
+    error.value = err instanceof Error ? err.message : '获取积分余额失败，请稍后重试'
+  }
 }
 
 const getRemainingPoints = () => {
