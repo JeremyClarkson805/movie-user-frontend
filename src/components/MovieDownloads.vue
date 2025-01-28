@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onBeforeUnmount } from 'vue'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
 import { Dialog, DialogPanel, TransitionRoot, TransitionChild } from '@headlessui/vue'
@@ -117,22 +117,32 @@ const handleConfirm = async () => {
       }
       showConfirmDialog.value = false
 
-      setTimeout(async () => {
-        const formData = new FormData()
-        formData.append('movieId', selectedLink.value.movieId.toString())
-        const linksResponse = await fetch('/api/movie/downloadLink', {
-          method: 'POST',
-          headers: {
-            'Authorization': localStorage.getItem('userToken') || ''
-          },
-          body: formData
-        })
-        const linksData = await linksResponse.json()
-        if (linksData.code === 200) {
-          props.links.splice(0, props.links.length, ...linksData.data)
+      const timer = setTimeout(async () => {
+        try {
+          const formData = new FormData()
+          formData.append('movieId', selectedLink.value?.movieId.toString() || '')
+          const linksResponse = await fetch('/api/movie/downloadLink', {
+            method: 'POST',
+            headers: {
+              'Authorization': localStorage.getItem('userToken') || ''
+            },
+            body: formData
+          })
+          const linksData = await linksResponse.json()
+          if (linksData.code === 200) {
+            props.links.splice(0, props.links.length, ...linksData.data)
+          }
+        } catch (err) {
+          console.error('Failed to refresh links:', err)
+        } finally {
+          showSuccessAnimation.value = false
+          selectedLink.value = null
         }
-        showSuccessAnimation.value = false
       }, 2000)
+
+      onBeforeUnmount(() => {
+        if (timer) clearTimeout(timer)
+      })
     } else {
       throw new Error(data.message || '兑换失败')
     }
@@ -141,7 +151,6 @@ const handleConfirm = async () => {
     error.value = err instanceof Error ? err.message : '兑换失败，请稍后重试'
   } finally {
     isUnlocking.value = false
-    selectedLink.value = null
   }
 }
 
@@ -242,23 +251,25 @@ const handleLinkClick = async (link: DownloadLink) => {
             </div>
 
             <!-- Mobile Layout -->
-            <div class="sm:hidden flex flex-col p-2 space-y-2">
-              <div class="flex items-center space-x-2">
-                <span :class="[
-                  'px-2 py-0.5 rounded text-xs font-medium text-white',
-                  getFileTypeLabel(link.fileType).color
-                ]">
-                  {{ getFileTypeLabel(link.fileType).label }}
-                </span>
-                <span class="font-medium text-sm truncate">{{ link.linkName }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span v-if="link.passwd" class="text-xs bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
-                  密码: {{ link.passwd }}
-                </span>
-                <span class="text-xs opacity-75">
-                  {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
-                </span>
+            <div class="sm:hidden p-2">
+              <div class="flex flex-col gap-2">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-0">
+                  <span :class="[
+                    'px-2 py-0.5 rounded text-xs font-medium text-white',
+                    getFileTypeLabel(link.fileType).color
+                  ]">
+                    {{ getFileTypeLabel(link.fileType).label }}
+                  </span>
+                  <span class="font-medium text-sm truncate">{{ link.linkName }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span v-if="link.passwd" class="text-xs bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                    密码: {{ link.passwd }}
+                  </span>
+                  <span class="text-xs opacity-75">
+                    {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
+                  </span>
+                </div>
               </div>
             </div>
           </button>
@@ -295,9 +306,10 @@ const handleLinkClick = async (link: DownloadLink) => {
           </div>
 
           <!-- Mobile Layout -->
-          <div class="sm:hidden p-2 space-y-2">
-            <div class="flex flex-col space-y-2">
-              <div class="flex items-center space-x-2">
+          <div class="sm:hidden p-2">
+            <div class="flex flex-col gap-2">
+              <!-- 上半部分：链接信息 -->
+              <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-0">
                 <span :class="[
                   'px-2 py-0.5 rounded text-xs font-medium text-white',
                   getFileTypeLabel(link.fileType).color
@@ -307,21 +319,24 @@ const handleLinkClick = async (link: DownloadLink) => {
                 <span class="font-medium text-sm truncate">{{ link.linkName }}</span>
               </div>
               <div class="flex items-center justify-between">
+                <span v-if="link.passwd" class="text-xs bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                  密码: {{ link.passwd }}
+                </span>
                 <span class="text-xs opacity-75">
                   {{ link.size > 0 ? `${link.size.toFixed(1)}GB` : '未知大小' }}
                 </span>
               </div>
-            </div>
-            <div class="border-t dark:border-gray-700 pt-2">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-1">
+
+              <!-- 下半部分：解锁按钮 -->
+              <div class="flex items-center justify-between border-t dark:border-gray-700 pt-2 mt-1">
+                <div class="flex items-center gap-1">
                   <span class="text-base">🔒</span>
                   <span class="text-xs font-medium text-blue-500">{{ link.points }} 积分</span>
                 </div>
                 <button
                     @click="handleUnlockConfirm(link)"
                     :disabled="unlockingStatus[link.id]"
-                    class="px-3 py-1 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                    class="px-3 py-1 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                   <span v-if="unlockingStatus[link.id]" class="animate-spin text-xs">⚡️</span>
                   <span>{{ unlockingStatus[link.id] ? '解锁中' : '解锁' }}</span>
